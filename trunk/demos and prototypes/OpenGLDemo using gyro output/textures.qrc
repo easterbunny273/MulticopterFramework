@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>cube.png</file>
+        <file>rotors.jpg</file>
+    </qresource>
+</RCC>

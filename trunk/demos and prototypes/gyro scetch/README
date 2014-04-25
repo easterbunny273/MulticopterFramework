@@ -1,0 +1,8 @@
+this is a modified scetch from http://www.i2cdevlib.com/,
+which supports the MPU6050 gyro
+
+- added:
+in the main file (*.ino), the definition 
+OUTPUT_BINARY_QUATERNION_AND_ACCELERATION
+and the corresponding code block in the
+loop() method was added 

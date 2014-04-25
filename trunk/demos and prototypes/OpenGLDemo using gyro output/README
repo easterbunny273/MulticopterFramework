@@ -1,0 +1,13 @@
+This is a modified opengl-example "cube" from Qt5.2 documentation. It is a quick&dirty demo to 
+read a rotation quaternion from a serial interface (which is written by the arduino) and render 
+a cube rotated by this quaternion.
+
+##################
+
+To compile/run/modify the demo, "cube.pro" can be opened using "QtCreator".
+(Qt 5.2 is necessary)
+
+##################
+
+To define from which serial interface the data should be read, modify
+"ReaderThread.h".
