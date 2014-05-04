@@ -22,12 +22,11 @@ public slots:
 
 
 		  SerialReader Reader;
-		  bool bOpened = Reader.open("/dev/ttyACM0");
+		  bool bOpened = Reader.open("/dev/ttyUSB1h");
 
 
 		  if (bOpened)
 		  {
-
 			  std::cout << "Opened interface!" << std::endl;
 
 			  // connect signal of receiving data from the reader to the slot of the renderer
