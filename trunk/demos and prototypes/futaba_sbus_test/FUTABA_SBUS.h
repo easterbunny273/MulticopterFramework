@@ -1,3 +1,4 @@
+// ch.moellinger@gmail.com, 05/2014
 
 #ifndef FUTABA_SBUS_h
 #define FUTABA_SBUS_h
@@ -7,42 +8,41 @@
 
 #define SBUS_SIGNAL_OK          0x00
 #define SBUS_SIGNAL_LOST        0x01
-#define SBUS_SIGNAL_FAILSAFE    0x03
-#define BAUDRATE 100000
-#define port Serial
-//#define ALL_CHANNELS
-
+#define SBUS_SIGNAL_FAILSAFE    0x02
 
 class FUTABA_SBUS
 {
-	public:
-		uint8_t sbusData[25];
-		int16_t channels[18];
-		int16_t servos[18];
-		uint8_t  failsafe_status;
-		int sbus_passthrough;
-		int toChannels;
-		void begin(void);
-		int16_t Channel(uint8_t ch);
-		uint8_t DigiChannel(uint8_t ch);
-		void Servo(uint8_t ch, int16_t position);
-		void DigiServo(uint8_t ch, uint8_t position);
-		uint8_t Failsafe(void);
-		void PassthroughSet(int mode);
-		int PassthroughRet(void);
-		void UpdateServos(void);
-		void UpdateChannels(void);
-		void FeedLine(void);
-	private:
-		uint8_t byte_in_sbus;
-		uint8_t bit_in_sbus;
-		uint8_t ch;
-		uint8_t bit_in_channel;
-		uint8_t bit_in_servo;
-		uint8_t inBuffer[25];
-		int bufferIndex;
-		uint8_t inData;
-		int feedState;
+  public:
+    void begin(void);
+
+    void ProcessInput(void);
+    bool FetchChannelData(int16_t *pTarget, uint8_t &rStatusByte);
+
+    bool IsDataAvailable() const { return m_bDataAvailable; }
+  
+  private:
+    void ItlStartReadingPayload();
+    void ItlAbortReadingPayload();
+    void ItlFinishReadingPayload();
+    void ItlSuccessfullReadPayload();
+    
+    /// Tries to resync by reading bytes until the searched byte is found and consumed
+    /// returns true if searched byte was found and consumed, false if no data is left and it was not found
+    bool ItlResyncTo(uint8_t nSearchedByte);
+    
+    bool m_bDataAvailable;
+    bool m_bIsReadingPayload;
+    
+    int  m_iCurBufferIndex;
+    
+    // A temporary buffer, used to 
+    // process the input data. If the line is 
+    // completely received and valid, it is copied to m_pReadSBusData
+    uint8_t m_pTempInBuffer[25];
+    
+    // The latest read sbus data
+    uint8_t m_pReadSBusData[25];
+                
 
 };
 

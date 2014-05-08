@@ -1,173 +1,49 @@
+// ch.moellinger@gmail.com, 05/2014
+
 #include "FUTABA_SBUS.h"
 
-void FUTABA_SBUS::begin(){
-	uint8_t loc_sbusData[25] = {
-	  0x0f,0x01,0x04,0x20,0x00,0xff,0x07,0x40,0x00,0x02,0x10,0x80,0x2c,0x64,0x21,0x0b,0x59,0x08,0x40,0x00,0x02,0x10,0x80,0x00,0x00};
-	int16_t loc_channels[18]  = {
-	  		1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,0,0};
-	int16_t loc_servos[18]    = {
-  			1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,1023,0,0};
-  	port.begin(BAUDRATE);
+#define SBUS_BAUDRATE 100000
+#define SBUS_DEVICE Serial3
 
-	memcpy(sbusData,loc_sbusData,25);
-	memcpy(channels,loc_channels,18);
-	memcpy(servos,loc_servos,18);
-	failsafe_status = SBUS_SIGNAL_OK;
-	sbus_passthrough = 1;
-	toChannels = 0;
-	bufferIndex=0;
-	feedState = 0;
+#define SBUS_PAYLOAD_STARTBYTE  0x0F
+#define SBUS_PAYLOAD_ENDBYTE    0x00
+
+void FUTABA_SBUS::begin()
+{
+        // set configuration for serial port (on Arduino Due, no preconfigured 
+        // settings for Serial.begin() are available)
+        // S-BUS uses an even parity and 2 stop bits
+       	SBUS_DEVICE.begin(SBUS_BAUDRATE);
+        USART3->US_MR = US_MR_USART_MODE_NORMAL | US_MR_USCLKS_MCK | US_MR_CHRL_8_BIT | US_MR_PAR_EVEN |
+                US_MR_NBSTOP_2_BIT | US_MR_CHMODE_NORMAL;
+                
+
+        memset(m_pReadSBusData, NULL, 25);
+
+	m_bDataAvailable = false;
+	m_iCurBufferIndex=0;
+	m_bIsReadingPayload = false;
 }
 
-int16_t FUTABA_SBUS::Channel(uint8_t ch) {
-  // Read channel data
-  if ((ch>0)&&(ch<=16)){
-    return channels[ch-1];
-  }
-  else{
-    return 1023;
-  }
-}
-uint8_t FUTABA_SBUS::DigiChannel(uint8_t ch) {
-  // Read digital channel data
-  if ((ch>0) && (ch<=2)) {
-    return channels[15+ch];
-  }
-  else{
-    return 0;
-  }
-}
-void FUTABA_SBUS::Servo(uint8_t ch, int16_t position) {
-  // Set servo position
-  if ((ch>0)&&(ch<=16)) {
-    if (position>2048) {
-      position=2048;
-    }
-    servos[ch-1] = position;
-  }
-}
-void FUTABA_SBUS::DigiServo(uint8_t ch, uint8_t position) {
-  // Set digital servo position
-  if ((ch>0) && (ch<=2)) {
-    if (position>1) {
-      position=1;
-    }
-    servos[15+ch] = position;
-  }
-}
-uint8_t FUTABA_SBUS::Failsafe(void) {
-  return failsafe_status;
-}
-
-void FUTABA_SBUS::PassthroughSet(int mode) {
-  // Set passtrough mode, if true, received channel data is send to servos
-  sbus_passthrough = mode;
-}
-
-int FUTABA_SBUS::PassthroughRet(void) {
-  // Return current passthrough mode
-  return sbus_passthrough;
-}
-void FUTABA_SBUS::UpdateServos(void) {
-  // Send data to servos
-  // Passtrough mode = false >> send own servo data
-  // Passtrough mode = true >> send received channel data
-  uint8_t i;
-  if (sbus_passthrough==0) {
-    // clear received channel data
-    for (i=1; i<24; i++) {
-      sbusData[i] = 0;
-    }
-
-    // reset counters
-    ch = 0;
-    bit_in_servo = 0;
-    byte_in_sbus = 1;
-    bit_in_sbus = 0;
-
-    // store servo data
-    for (i=0; i<176; i++) {
-      if (servos[ch] & (1<<bit_in_servo)) {
-        sbusData[byte_in_sbus] |= (1<<bit_in_sbus);
-      }
-      bit_in_sbus++;
-      bit_in_servo++;
-
-      if (bit_in_sbus == 8) {
-        bit_in_sbus =0;
-        byte_in_sbus++;
-      }
-      if (bit_in_servo == 11) {
-        bit_in_servo =0;
-        ch++;
-      }
-    }
-
-    // DigiChannel 1
-    if (channels[16] == 1) {
-      sbusData[23] |= (1<<0);
-    }
-    // DigiChannel 2
-    if (channels[17] == 1) {
-      sbusData[23] |= (1<<1);
-    }
-
-    // Failsafe
-    if (failsafe_status == SBUS_SIGNAL_LOST) {
-      sbusData[23] |= (1<<2);
-    }
-
-    if (failsafe_status == SBUS_SIGNAL_FAILSAFE) {
-      sbusData[23] |= (1<<2);
-      sbusData[23] |= (1<<3);
-    }
-  }
-  // send data out
-  //serialPort.write(sbusData,25);
-  for (i=0;i<25;i++) {
-    port.write(sbusData[i]);
-  }
-}
-void FUTABA_SBUS::UpdateChannels(void) {
-  //uint8_t i;
-  //uint8_t sbus_pointer = 0;
-  // clear channels[]
-  /*for (i=0; i<16; i++) {
-    channels[i] = 0;
-  }
-
-  // reset counters
-  byte_in_sbus = 1;
-  bit_in_sbus = 0;
-  ch = 0;
-  bit_in_channel = 0;
-  //this method is much slower than the other method
-  // process actual sbus data
-  for (i=0; i<176; i++) {
-    if (sbusData[byte_in_sbus] & (1<<bit_in_sbus)) {
-      channels[ch] |= (1<<bit_in_channel);
-    }
-    bit_in_sbus++;
-    bit_in_channel++;
-
-    if (bit_in_sbus == 8) {
-      bit_in_sbus =0;
-      byte_in_sbus++;
-    }
-    if (bit_in_channel == 11) {
-      bit_in_channel =0;
-      ch++;
-    }
-  }*/
-
-  channels[0]  = ((sbusData[1]|sbusData[2]<< 8) & 0x07FF);
-  channels[1]  = ((sbusData[2]>>3|sbusData[3]<<5) & 0x07FF);
-  channels[2]  = ((sbusData[3]>>6|sbusData[4]<<2|sbusData[5]<<10) & 0x07FF);
-  channels[3]  = ((sbusData[5]>>1|sbusData[6]<<7) & 0x07FF);
-  channels[4]  = ((sbusData[6]>>4|sbusData[7]<<4) & 0x07FF);
-  channels[5]  = ((sbusData[7]>>7|sbusData[8]<<1|sbusData[9]<<9) & 0x07FF);
-  channels[6]  = ((sbusData[9]>>2|sbusData[10]<<6) & 0x07FF);
-  channels[7]  = ((sbusData[10]>>5|sbusData[11]<<3) & 0x07FF); // & the other 8 + 2 channels if you need them
+bool FUTABA_SBUS::FetchChannelData(int16_t *pTarget, uint8_t &rStatusByte)
+{
+  pTarget[0]  = ((m_pReadSBusData[1]|m_pReadSBusData[2]<< 8) & 0x07FF);
+  pTarget[1]  = ((m_pReadSBusData[2]>>3|m_pReadSBusData[3]<<5) & 0x07FF);
+  pTarget[2]  = ((m_pReadSBusData[3]>>6|m_pReadSBusData[4]<<2|m_pReadSBusData[5]<<10) & 0x07FF);
+  pTarget[3]  = ((m_pReadSBusData[5]>>1|m_pReadSBusData[6]<<7) & 0x07FF);
+  pTarget[4]  = ((m_pReadSBusData[6]>>4|m_pReadSBusData[7]<<4) & 0x07FF);
+  pTarget[5]  = ((m_pReadSBusData[7]>>7|m_pReadSBusData[8]<<1|m_pReadSBusData[9]<<9) & 0x07FF);
+  pTarget[6]  = ((m_pReadSBusData[9]>>2|m_pReadSBusData[10]<<6) & 0x07FF);
+  
+  // Failsafe
+  rStatusByte = SBUS_SIGNAL_OK;
+  if (m_pReadSBusData[23] & (1<<2))
+    rStatusByte |= SBUS_SIGNAL_LOST;
+  if (m_pReadSBusData[23] & (1<<3))
+    rStatusByte |= SBUS_SIGNAL_FAILSAFE;
+  
+  m_bDataAvailable = false;
+/*  channels[7]  = ((sbusData[10]>>5|sbusData[11]<<3) & 0x07FF); // & the other 8 + 2 channels if you need them
   #ifdef ALL_CHANNELS
   channels[8]  = ((sbusData[12]|sbusData[13]<< 8) & 0x07FF);
   channels[9]  = ((sbusData[13]>>3|sbusData[14]<<5) & 0x07FF);
@@ -177,65 +53,85 @@ void FUTABA_SBUS::UpdateChannels(void) {
   channels[13] = ((sbusData[18]>>7|sbusData[19]<<1|sbusData[20]<<9) & 0x07FF);
   channels[14] = ((sbusData[20]>>2|sbusData[21]<<6) & 0x07FF);
     channels[15] = ((sbusData[21]>>5|sbusData[22]<<3) & 0x07FF);
-  #endif
-  // DigiChannel 1
-  /*if (sbusData[23] & (1<<0)) {
-    channels[16] = 1;
-  }
-  else{
-    channels[16] = 0;
-  }
-  // DigiChannel 2
-  if (sbusData[23] & (1<<1)) {
-    channels[17] = 1;
-  }
-  else{
-    channels[17] = 0;
-  }*/
-  // Failsafe
-  failsafe_status = SBUS_SIGNAL_OK;
-  if (sbusData[23] & (1<<2)) {
-    failsafe_status = SBUS_SIGNAL_LOST;
-  }
-  if (sbusData[23] & (1<<3)) {
-    failsafe_status = SBUS_SIGNAL_FAILSAFE;
-  }
-
+  #endif*/
 }
-void FUTABA_SBUS::FeedLine(void){
-  if (port.available() > 24){
-    while(port.available() > 0){
-      inData = port.read();
-      switch (feedState){
-      case 0:
-        if (inData != 0x0f){
-          while(port.available() > 0){//read the contents of in buffer this should resync the transmission
-            inData = port.read();
+
+void FUTABA_SBUS::ProcessInput(void)
+{
+  if (SBUS_DEVICE.available() > 24)
+  {
+    while(SBUS_DEVICE.available() > 0)
+    {
+      uint8_t cReadByte = SBUS_DEVICE.read();
+      
+      if (m_bIsReadingPayload)
+      {
+        m_iCurBufferIndex ++;
+        m_pTempInBuffer[m_iCurBufferIndex] = cReadByte;
+
+        if (m_iCurBufferIndex == 24)
+        {
+          if (m_pTempInBuffer[0]  ==  SBUS_PAYLOAD_STARTBYTE && 
+              m_pTempInBuffer[24] ==  SBUS_PAYLOAD_ENDBYTE)
+          {
+            // Start and end byte match, we can assume that we had
+            // read the complete line successfully
+            ItlFinishReadingPayload();
           }
-          return;
-        }
-        else{
-          bufferIndex = 0;
-          inBuffer[bufferIndex] = inData;
-          inBuffer[24] = 0xff;
-          feedState = 1;
-        }
-        break;
-      case 1:
-        bufferIndex ++;
-        inBuffer[bufferIndex] = inData;
-        if (bufferIndex < 24 && port.available() == 0){
-          feedState = 0;
-        }
-        if (bufferIndex == 24){
-          feedState = 0;
-          if (inBuffer[0]==0x0f && inBuffer[24] == 0x00){
-            memcpy(sbusData,inBuffer,25);
-            toChannels = 1;
+          else
+          {
+            // something went wrong, abort
+            ItlAbortReadingPayload();
           }
         }
-        break;
+      }
+      else
+      {
+        if (cReadByte == SBUS_PAYLOAD_STARTBYTE || ItlResyncTo(SBUS_PAYLOAD_STARTBYTE))
+          ItlStartReadingPayload();
+        else
+          ItlAbortReadingPayload();
       }
     }
   }
+}
+
+bool FUTABA_SBUS::ItlResyncTo(uint8_t nSearchedByte)
+{
+  // read until we find the searched byte to resync or until 
+  // no more data is available
+  while(SBUS_DEVICE.available() > 0)
+  {
+    uint8_t cReadByte = SBUS_DEVICE.read();
+    if (cReadByte == nSearchedByte)
+      return true;
+  }
+  
+  return false;
+}
+
+void FUTABA_SBUS::ItlStartReadingPayload()
+{
+  m_iCurBufferIndex = 0;
+  m_pTempInBuffer[0]  = 0x0F;
+  m_pTempInBuffer[24] = 0xFF;
+  m_bIsReadingPayload = true;
+}
+
+void FUTABA_SBUS::ItlAbortReadingPayload()
+{
+ // memset(m_pTempInBuffer, NULL, 25);
+  m_bIsReadingPayload = false;
+}
+
+void FUTABA_SBUS::ItlFinishReadingPayload()
+{
+  // stop reading payload
+  m_bIsReadingPayload = false;
+  
+  // copy read payload
+  memcpy(m_pReadSBusData,m_pTempInBuffer,25);
+
+  // set flag to let data be fetched
+  m_bDataAvailable = true;
 }
