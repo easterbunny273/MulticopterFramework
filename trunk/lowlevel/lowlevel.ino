@@ -4,45 +4,24 @@ SBusReader sBus;
 
 void setup()
 {
-  sBus.begin();
-  Serial.begin(115200);
-  Serial.println("Initialized!");
-}
-
-float NormalizeChannelData(int16_t iInput)
-{
-  return (iInput - 1024) / 2048.0f + 0.5f;
+	// 1) Setup SBus
+	// 2) Setup Gyro
+	// 3) Setup serial connection to high level device
 }
 
 void loop()
 {
-  sBus.ProcessInput();
+	// 0) Read HighLevel Input, if connected
 
-  if (sBus.IsDataAvailable())
-  {
-    int16_t pChannelData[7];
-    uint8_t nStatusByte;
-    
-    sBus.FetchChannelData(pChannelData, nStatusByte);
+	// 1) Process Gyro Input -> calculate quaternion (="q_ist")
 
-    Serial.print(nStatusByte);
-    
-    Serial.print("# [1]");
-    Serial.print(NormalizeChannelData(pChannelData[0]));
-    Serial.print(" [2]");
-    Serial.print(NormalizeChannelData(pChannelData[1]));
-    Serial.print(" [3]");
-    Serial.print(NormalizeChannelData(pChannelData[2]));
-    Serial.print(" [4]");
-    Serial.print(NormalizeChannelData(pChannelData[3]));
-    Serial.print(" [5]");
-    Serial.print(NormalizeChannelData(pChannelData[4]));
-    Serial.print(" [6]");
-    Serial.print(NormalizeChannelData(pChannelData[5]));
-    Serial.print(" [7]");
-    Serial.print(NormalizeChannelData(pChannelData[6]));
-    Serial.println();
-  }
+	// 2) Process SBus Input
+	// 2.1) extract "mode" from an input channel, build quaternion "q_rc" from two input channels (nick+roll)
+	// 2.2) if mode == RC_ABSOLUTE, set quaternion "q_soll" = "q_rc"
+	//		if mode == RC_RELATIVE, set quaternion "q_soll" = "q_soll" + "q_rc"
+	//		if mode == RC_HIGHLEVEL, set quaternion "q_soll" from highlevel input
 
+	// 3) calculate difference between "q_rc" and "q_soll"
 
+	// 4) calculate outputs for ESCs
 }
