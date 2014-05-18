@@ -17,6 +17,7 @@ public:
 	virtual bool processData() = 0;
 
 	virtual void getQuaternion(Quaternion &rQuaternion) const = 0;
+	virtual void getYawPitchRoll(float &rYaw, float &rPitch, float &rRoll) const = 0;
 };
 
 #endif

@@ -20,6 +20,8 @@ public:
 
 	virtual void getQuaternion(Quaternion &rQuaternion) const;
 
+	virtual void getYawPitchRoll(float &rYaw, float &rPitch, float &rRoll) const;
+
 private:
 	bool ItlInitializeGyro();
 	bool ItlInitializeDMP();

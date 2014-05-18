@@ -11,7 +11,7 @@
 #define LOWLEVELCONFIG_SBUS_DEVICE Serial3
 
 // Whether the gyro data processing should use interrupts
-#define LOWLEVELCONFIG_GYRO_USE_INTERRUPT true
+#define LOWLEVELCONFIG_GYRO_USE_INTERRUPT false
 
 
 #define LOWLEVELCONFIG_ENABLE_DEBUGGING true

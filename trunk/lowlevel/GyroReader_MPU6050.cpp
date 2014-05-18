@@ -88,7 +88,7 @@ bool GyroReader_MPU6050::ItlInitializeDMP()
         m_nInterruptStatus = m_pDevice->getIntStatus();
 
         // set our DMP Ready flag so the main loop() function knows it's okay to use it
-        debug_println(F("DMP ready! Waiting for first interrupt..."));
+        debug_println(F("DMP ready!"));
 		m_bDmpReady = true;
 
         // get expected DMP packet size for later comparison
@@ -157,8 +157,8 @@ bool GyroReader_MPU6050::processData()
 				m_nFifoCount -= m_nPacketSize;
 			}
 			
-			// read quaternion
-			m_pDevice->dmpGetQuaternion(m_pCurrentQuaternion, m_pFifoBuffer);
+			// read quaternion and gravity
+			m_pDevice->dmpGetQuaternion(m_pCurrentQuaternion, m_pFifoBuffer);			
 
 			bProcessedData = true;
 		}
@@ -170,4 +170,17 @@ bool GyroReader_MPU6050::processData()
 void GyroReader_MPU6050::getQuaternion(Quaternion &rQuaternion) const
 {
 	rQuaternion = *m_pCurrentQuaternion;
+}
+
+void GyroReader_MPU6050::getYawPitchRoll(float &rYaw, float &rPitch, float &rRoll) const
+{
+	VectorFloat vGravity;
+	m_pDevice->dmpGetGravity(&vGravity, m_pCurrentQuaternion);
+
+	float pData[3];
+	m_pDevice->dmpGetYawPitchRoll(pData, m_pCurrentQuaternion, &vGravity);
+
+	rYaw = pData[0];
+	rPitch = pData[1];
+	rRoll = pData[2];
 }
