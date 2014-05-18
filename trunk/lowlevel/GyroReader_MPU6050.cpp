@@ -1,6 +1,7 @@
 #include "GyroReader_MPU6050.h"
 #include "MPU6050_6Axis_MotionApps20.h"
-#include "Wire.h"
+#include <Arduino.h>
+#include <Wire.h>
 
 #define MPU6050_I2C_ADDRESS MPU6050_DEFAULT_ADDRESS	//< is 0x68 by default, can also be 0x69 depending on board
 
@@ -42,7 +43,7 @@ GyroReader_MPU6050::~GyroReader_MPU6050()
 
 bool GyroReader_MPU6050::ItlInitializeGyro()
 {
-	Wire.begin();
+	//Wire.begin();
 
 	// Initialize gyro
 	debug_println(F("Initializing MPU6050 gyro ..."));
@@ -71,6 +72,7 @@ bool GyroReader_MPU6050::ItlInitializeDMP()
 
         // enable Arduino interrupt detection
 
+#if LOWLEVELCONFIG_GYRO_USE_INTERRUPT
 #ifdef _VARIANT_ARDUINO_DUE_X_
 		// Use the same pin as on Arduino UNO
 		// Note that on Arduino Due, we define the PIN (see http://arduino.cc/en/Reference/attachInterrupt)
@@ -81,6 +83,7 @@ bool GyroReader_MPU6050::ItlInitializeDMP()
 		// Use interrupt0 (which is connected to pin 2)
 		debug_println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
 		attachInterrupt(0, StaticOnInterrupt, RISING);	
+#endif
 #endif
         m_nInterruptStatus = m_pDevice->getIntStatus();
 
@@ -110,17 +113,18 @@ bool GyroReader_MPU6050::begin()
 		bOk = ItlInitializeDMP();
 	}
 
-	s_bInterruptHigh = false;
-
-	
+	return bOk;
 }
 
 bool GyroReader_MPU6050::processData()
 {
-	// Process data if DMP is ready, interrupt was sent and enough data is in FIFI
-	bool bProcessData = (m_bDmpReady && s_bInterruptHigh);
+	bool bProcessedData = false;
 
-	if (bProcessData)
+#if LOWLEVELCONFIG_GYRO_USE_INTERRUPT
+	if (m_bDmpReady && s_bInterruptHigh)
+#else
+	if (m_bDmpReady)
+#endif
 	{
 		// reset interrupt flag and get INT_STATUS byte
 		s_bInterruptHigh = false;
@@ -130,7 +134,7 @@ bool GyroReader_MPU6050::processData()
 		m_nFifoCount = m_pDevice->getFIFOCount();
 
 		// check for overflow (this should never happen unless our code is too inefficient)
-		if ((nInterruptStatus & 0x10) || m_nFifoCount == 1024) 
+		if ((nInterruptStatus & 0x10) || m_nFifoCount >= 1024) 
 		{
 			// reset so we can continue cleanly
 			m_pDevice->resetFIFO();
@@ -143,25 +147,27 @@ bool GyroReader_MPU6050::processData()
 			// wait for correct available data length, should be a VERY short wait
 			while (m_nFifoCount < m_nPacketSize) m_nFifoCount = m_pDevice->getFIFOCount();
 
-			// read a packet from FIFO
-			m_pDevice->getFIFOBytes(m_pFifoBuffer, m_nPacketSize);
+			while (m_nFifoCount > m_nPacketSize)
+			{
+				// read a packet from FIFO
+				m_pDevice->getFIFOBytes(m_pFifoBuffer, m_nPacketSize);
         
-			// track FIFO count here in case there is > 1 packet available
-			// (this lets us immediately read more without waiting for an interrupt)
-			m_nFifoCount -= m_nPacketSize;
-
+				// track FIFO count here in case there is > 1 packet available
+				// (this lets us immediately read more without waiting for an interrupt)
+				m_nFifoCount -= m_nPacketSize;
+			}
+			
 			// read quaternion
 			m_pDevice->dmpGetQuaternion(m_pCurrentQuaternion, m_pFifoBuffer);
+
+			bProcessedData = true;
 		}
 	}
 
-	return bProcessData;
+	return bProcessedData;
 }
 
-void GyroReader_MPU6050::getQuaternion(float &rfW, float &rfX, float &rfY, float &rfZ)
+void GyroReader_MPU6050::getQuaternion(Quaternion &rQuaternion) const
 {
-	rfW = m_pCurrentQuaternion->w;
-	rfX = m_pCurrentQuaternion->x;
-	rfY = m_pCurrentQuaternion->y;
-	rfZ = m_pCurrentQuaternion->z;
+	rQuaternion = *m_pCurrentQuaternion;
 }

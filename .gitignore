@@ -1,0 +1,11 @@
+trunk/lowlevel/Visual Micro/.lowlevel.vsarduino.h
+trunk/lowlevel/Visual Micro/Compile.vmps.xml
+trunk/lowlevel/Visual Micro/Configuration.Debug.vmps.xml
+trunk/lowlevel/Visual Micro/Upload.vmps.xml
+trunk/lowlevel/lowlevel.opensdf
+trunk/lowlevel/lowlevel.sdf
+trunk/lowlevel/Visual Micro/Configuration.Release.vmps.xml
+trunk/lowlevel/lowlevel.v11.suo
+trunk/lowlevel/lowlevel.vcxproj
+trunk/lowlevel/lowlevel.vcxproj.filters
+trunk/lowlevel/lowlevel.vcxproj.user

@@ -10,19 +10,23 @@
 
 #define LOWLEVELCONFIG_SBUS_DEVICE Serial3
 
-#define LOWLEVELCONFIG_DEBUG
+// Whether the gyro data processing should use interrupts
+#define LOWLEVELCONFIG_GYRO_USE_INTERRUPT true
+
+
+#define LOWLEVELCONFIG_ENABLE_DEBUGGING true
 #define LOWLEVELCONFIG_DEBUG_DEVICE Serial
 
 template<typename T> void debug_print(T message)
 {
-#ifdef LOWLEVELCONFIG_DEBUG
+#if LOWLEVELCONFIG_ENABLE_DEBUGGING
 	LOWLEVELCONFIG_DEBUG_DEVICE.print(message);
 #endif
 };
 
 template<typename T> void debug_println(T message)
 {
-#ifdef LOWLEVELCONFIG_DEBUG
+#if LOWLEVELCONFIG_ENABLE_DEBUGGING
 	LOWLEVELCONFIG_DEBUG_DEVICE.println(message);
 #endif
 };

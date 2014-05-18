@@ -18,7 +18,7 @@ public:
 
 	virtual bool processData();
 
-	virtual void getQuaternion(float &rfW, float &rfX, float &rfY, float &rfZ);
+	virtual void getQuaternion(Quaternion &rQuaternion) const;
 
 private:
 	bool ItlInitializeGyro();

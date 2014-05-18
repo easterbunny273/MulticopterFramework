@@ -32,6 +32,8 @@ THE SOFTWARE.
 #ifndef _HELPER_3DMATH_H_
 #define _HELPER_3DMATH_H_
 
+#include <math.h>
+
 class Quaternion {
     public:
         float w;
@@ -52,6 +54,14 @@ class Quaternion {
             y = ny;
             z = nz;
         }
+
+		Quaternion & operator=(const Quaternion &rOther)
+		{
+			w = rOther.w;
+			x = rOther.x;
+			y = rOther.y;
+			z = rOther.z;
+		}
 
         Quaternion getProduct(Quaternion q) {
             // Quaternion multiplication is defined by:
@@ -87,6 +97,17 @@ class Quaternion {
             r.normalize();
             return r;
         }
+
+		// Conversion helper methods 
+		void toEuler(float &rAlpha, float &rBeta_x, float &rBeta_y, float &rBeta_z);
+		void fromEuler(float fAlpha, float fBeta_x, float fBeta_y, float fBeta_z)
+		{
+				float fHalfAlpha = fAlpha / 2;
+				w = cos(fHalfAlpha);
+				x = sin(fHalfAlpha) * cos(fBeta_x);
+				y = sin(fHalfAlpha) * cos(fBeta_y);
+				z = sin(fHalfAlpha) * cos(fBeta_z);
+		}
 };
 
 class VectorInt16 {

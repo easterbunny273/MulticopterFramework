@@ -1,15 +1,25 @@
+// Include necessary arduino libraries
+// Please note that it seems that they must 
+// always be included in the *.ino file
+#include <Arduino.h>
+#include <Wire.h>
+
+// Include project libraries
 #include "SBusReader.h"
 #include "IGyroReader.h"
 #include "GyroReader_MPU6050.h"
+#include "helper_3dmath.h"
 
 SBusReader sBus;
 IGyroReader * pGyroReader = NULL;
 
 void setup()
 {
+	Wire.begin();
+
 	// 0) Setup Debug Device
-#ifdef LOWLEVELCONFIG_DEBUG
-	LOWLEVELCONFIG_DEBUG_DEVICE.begin(9600);
+#if LOWLEVELCONFIG_ENABLE_DEBUGGING
+	LOWLEVELCONFIG_DEBUG_DEVICE.begin(57600);
 #endif
 
 	// 1) Setup SBus
@@ -35,13 +45,13 @@ void loop()
 	// cm 16.05 Debug Output, not really working yet
 	if (bProcessed)
 	{
-		float fTestW, fTestX, fTestY, fTestZ;
-		pGyroReader->getQuaternion(fTestW, fTestX, fTestY, fTestZ);
+		Quaternion q_ist;
+		pGyroReader->getQuaternion(q_ist);
 
-		debug_print("q_ist: w("); debug_print(fTestW); debug_print(" ");
-		debug_print(" x("); debug_print(fTestX); debug_print(" ");
-		debug_print(" y("); debug_print(fTestY); debug_print(" ");
-		debug_print(" z("); debug_print(fTestZ); debug_println("");
+		debug_print("q_ist: w("); debug_print(q_ist.w); debug_print(") ");
+		debug_print(" x("); debug_print(q_ist.x); debug_print(") ");
+		debug_print(" y("); debug_print(q_ist.y); debug_print(") ");
+		debug_print(" z("); debug_print(q_ist.z); debug_println(")");
 	}
 
 
