@@ -102,6 +102,8 @@ bool GyroReader_MPU6050::ItlInitializeDMP()
         debug_print(devStatus);
         debug_println(F(")"));
     }
+
+	return m_bDmpReady;
 }
 
 bool GyroReader_MPU6050::begin()
