@@ -1,4 +1,5 @@
 // ch.moellinger@gmail.com, 05/2014
+#include <HardwareSerial.h>
 
 #include "SBusReader.h"
 #include "config.h"
@@ -14,7 +15,7 @@ void SBusReader::begin()
         // set configuration for serial port (on Arduino Due, no preconfigured 
         // settings for Serial.begin() are available)
         // S-BUS uses an even parity and 2 stop bits
-       	SBUS_DEVICE.begin(SBUS_BAUDRATE);
+		SBUS_DEVICE.begin(SBUS_BAUDRATE, SERIAL_8E1);
      //   USART3->US_MR = US_MR_USART_MODE_NORMAL | US_MR_USCLKS_MCK | US_MR_CHRL_8_BIT | US_MR_PAR_EVEN |
      //           US_MR_NBSTOP_2_BIT | US_MR_CHMODE_NORMAL;
                 
@@ -24,6 +25,16 @@ void SBusReader::begin()
 	m_bDataAvailable = false;
 	m_iCurBufferIndex=0;
 	m_bIsReadingPayload = false;
+}
+
+void printHex(int num, int precision) {
+	char tmp[16];
+	char format[128];
+
+	sprintf(format, "0x%%.%dX", precision);
+
+	sprintf(tmp, format, num);
+	LOWLEVELCONFIG_DEBUG_DEVICE.print(tmp);
 }
 
 bool SBusReader::FetchChannelData(int16_t *pTarget, uint8_t &rStatusByte)
@@ -42,6 +53,20 @@ bool SBusReader::FetchChannelData(int16_t *pTarget, uint8_t &rStatusByte)
     rStatusByte |= SBUS_SIGNAL_LOST;
   if (m_pReadSBusData[23] & (1<<3))
     rStatusByte |= SBUS_SIGNAL_FAILSAFE;
+
+  for (unsigned int n = 0; n < 7; n++)
+  {
+	  //printHex(m_pReadSBusData[n], 2);
+	  LOWLEVELCONFIG_DEBUG_DEVICE.print(pTarget[n]);
+	  
+	  LOWLEVELCONFIG_DEBUG_DEVICE.print(":");
+  }
+  if (0 != m_pReadSBusData[23])
+	  LOWLEVELCONFIG_DEBUG_DEVICE.print("#######");
+
+  LOWLEVELCONFIG_DEBUG_DEVICE.println();
+	
+  
   
   m_bDataAvailable = false;
 /*  channels[7]  = ((sbusData[10]>>5|sbusData[11]<<3) & 0x07FF); // & the other 8 + 2 channels if you need them
