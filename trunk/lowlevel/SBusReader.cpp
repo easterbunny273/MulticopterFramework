@@ -10,21 +10,28 @@
 #define SBUS_PAYLOAD_STARTBYTE  0x0F
 #define SBUS_PAYLOAD_ENDBYTE    0x00
 
+
 void SBusReader::begin()
 {
-        // set configuration for serial port (on Arduino Due, no preconfigured 
-        // settings for Serial.begin() are available)
-        // S-BUS uses an even parity and 2 stop bits
-		SBUS_DEVICE.begin(SBUS_BAUDRATE, SERIAL_8E1);
-     //   USART3->US_MR = US_MR_USART_MODE_NORMAL | US_MR_USCLKS_MCK | US_MR_CHRL_8_BIT | US_MR_PAR_EVEN |
-     //           US_MR_NBSTOP_2_BIT | US_MR_CHMODE_NORMAL;
-                
-
-        memset(m_pReadSBusData, NULL, 25);
+    // set configuration for serial port 
+	// (SBUS uses 8 data bits, 2 stop bits, even parity, and an inverted signal)
+	SBUS_DEVICE.begin(SBUS_BAUDRATE, SERIAL_9O1_RXINV);
+       
+	// clear buffer for read data
+    memset(m_pReadSBusData, NULL, 25);
 
 	m_bDataAvailable = false;
 	m_iCurBufferIndex=0;
 	m_bIsReadingPayload = false;
+
+	// add some counters for evaluation
+	m_iCorrectFrames = 0;
+	m_iWrongFrames = 0;
+	m_iFalseCorrect = 0;
+
+	// reset memory for signal quality evaluation
+	memset(m_pbLastSignalStates, false, NUM_FRAMES_USED_FOR_QUALITY_EVALUATION * sizeof(bool));
+	m_iCurPtrForLastSignalStates = 0;
 }
 
 void printHex(int num, int precision) {
@@ -39,47 +46,14 @@ void printHex(int num, int precision) {
 
 bool SBusReader::FetchChannelData(int16_t *pTarget, uint8_t &rStatusByte)
 {
-  pTarget[0]  = ((m_pReadSBusData[1]|m_pReadSBusData[2]<< 8) & 0x07FF);
-  pTarget[1]  = ((m_pReadSBusData[2]>>3|m_pReadSBusData[3]<<5) & 0x07FF);
-  pTarget[2]  = ((m_pReadSBusData[3]>>6|m_pReadSBusData[4]<<2|m_pReadSBusData[5]<<10) & 0x07FF);
-  pTarget[3]  = ((m_pReadSBusData[5]>>1|m_pReadSBusData[6]<<7) & 0x07FF);
-  pTarget[4]  = ((m_pReadSBusData[6]>>4|m_pReadSBusData[7]<<4) & 0x07FF);
-  pTarget[5]  = ((m_pReadSBusData[7]>>7|m_pReadSBusData[8]<<1|m_pReadSBusData[9]<<9) & 0x07FF);
-  pTarget[6]  = ((m_pReadSBusData[9]>>2|m_pReadSBusData[10]<<6) & 0x07FF);
-  
-  // Failsafe
-  rStatusByte = SBUS_SIGNAL_OK;
-  if (m_pReadSBusData[23] & (1<<2))
-    rStatusByte |= SBUS_SIGNAL_LOST;
-  if (m_pReadSBusData[23] & (1<<3))
-    rStatusByte |= SBUS_SIGNAL_FAILSAFE;
+	if (m_bDataAvailable)
+	{
+		ItlUpdateChannelValuesFromReadSBUSData();
+		m_bDataAvailable = false;
+	}	
 
-  for (unsigned int n = 0; n < 7; n++)
-  {
-	  //printHex(m_pReadSBusData[n], 2);
-	  LOWLEVELCONFIG_DEBUG_DEVICE.print(pTarget[n]);
-	  
-	  LOWLEVELCONFIG_DEBUG_DEVICE.print(":");
-  }
-  if (0 != m_pReadSBusData[23])
-	  LOWLEVELCONFIG_DEBUG_DEVICE.print("#######");
-
-  LOWLEVELCONFIG_DEBUG_DEVICE.println();
-	
-  
-  
-  m_bDataAvailable = false;
-/*  channels[7]  = ((sbusData[10]>>5|sbusData[11]<<3) & 0x07FF); // & the other 8 + 2 channels if you need them
-  #ifdef ALL_CHANNELS
-  channels[8]  = ((sbusData[12]|sbusData[13]<< 8) & 0x07FF);
-  channels[9]  = ((sbusData[13]>>3|sbusData[14]<<5) & 0x07FF);
-  channels[10] = ((sbusData[14]>>6|sbusData[15]<<2|sbusData[16]<<10) & 0x07FF);
-  channels[11] = ((sbusData[16]>>1|sbusData[17]<<7) & 0x07FF);
-  channels[12] = ((sbusData[17]>>4|sbusData[18]<<4) & 0x07FF);
-  channels[13] = ((sbusData[18]>>7|sbusData[19]<<1|sbusData[20]<<9) & 0x07FF);
-  channels[14] = ((sbusData[20]>>2|sbusData[21]<<6) & 0x07FF);
-    channels[15] = ((sbusData[21]>>5|sbusData[22]<<3) & 0x07FF);
-  #endif*/
+	memcpy(pTarget, m_pLastChannelValues, sizeof(int16_t) * NUM_CHANNELS);
+	rStatusByte = m_nLastStatusByte;
 }
 
 void SBusReader::ProcessInput(void)
@@ -101,22 +75,61 @@ void SBusReader::ProcessInput(void)
               m_pTempInBuffer[24] ==  SBUS_PAYLOAD_ENDBYTE)
           {
             // Start and end byte match, we can assume that we had
-            // read the complete line successfully
-            ItlFinishReadingPayload();
+			// read the complete line successfully
+			  ItlFinishReadingPayload();
+			  m_iCorrectFrames++;
           }
           else
           {
-            // something went wrong, abort
-            ItlAbortReadingPayload();
+			  m_iWrongFrames++;
+
+			  bool bShifted = false;
+
+			  // We assume that the current start byte actually was a
+			  // data byte, not a start byte. So loop through buffer for next
+			  // start byte and shift data (e.g., if 0F is the start byte:
+			  // (0F 00 01 02 03 0F 0A 0B 0C) --> (0F 0A 0B [...])
+
+			  for (unsigned int n = 1; n < 24; ++n)
+			  {
+				  if (m_pTempInBuffer[n] == SBUS_PAYLOAD_STARTBYTE)
+				  {
+					  bShifted = true;
+					  for (unsigned int nn = 0; nn < n; ++nn)
+						  m_pTempInBuffer[nn] = m_pTempInBuffer[n + nn];
+						
+					  m_iCurBufferIndex -= n;
+				  }
+
+			  }
+
+			  if (bShifted == false)
+			  {
+				  // something went wrong, abort
+				  ItlAbortReadingPayload();
+			  }
           }
         }
       }
       else
       {
-        if (cReadByte == SBUS_PAYLOAD_STARTBYTE || ItlResyncTo(SBUS_PAYLOAD_STARTBYTE))
-          ItlStartReadingPayload();
-        else
-          ItlAbortReadingPayload();
+		bool bIsStartByte = (cReadByte == SBUS_PAYLOAD_STARTBYTE);
+		bool bResyncedToStartByte = (bIsStartByte == false) ? ItlResyncTo(SBUS_PAYLOAD_STARTBYTE) : false;
+
+		if (bIsStartByte || bResyncedToStartByte)
+		{
+			if (bResyncedToStartByte)
+				LOWLEVELCONFIG_DEBUG_DEVICE.println("RESYNCED_TO_STARTBYTE");
+
+			ItlStartReadingPayload();
+		}			
+		else
+		{
+			LOWLEVELCONFIG_DEBUG_DEVICE.println("ABORTED");
+
+			ItlAbortReadingPayload();
+			m_iWrongFrames++;
+		}          
       }
     }
   }
@@ -156,8 +169,44 @@ void SBusReader::ItlFinishReadingPayload()
   m_bIsReadingPayload = false;
   
   // copy read payload
-  memcpy(m_pReadSBusData,m_pTempInBuffer,25);
+  memcpy(m_pReadSBusData, m_pTempInBuffer,25);
+
+  ItlUpdateSignalQualityCounter();
 
   // set flag to let data be fetched
   m_bDataAvailable = true;
+}
+
+void SBusReader::ItlUpdateSignalQualityCounter()
+{
+	// read status byte and add state in signal-quality-ringbuffer
+	m_pbLastSignalStates[m_iCurPtrForLastSignalStates++] = (m_pReadSBusData[23] == SBUS_SIGNAL_OK);
+	if (m_iCurPtrForLastSignalStates == NUM_FRAMES_USED_FOR_QUALITY_EVALUATION)
+		m_iCurPtrForLastSignalStates = 0;
+}
+
+void SBusReader::ItlUpdateChannelValuesFromReadSBUSData()
+{
+	if (m_bDataAvailable)
+	{
+		static_assert(NUM_CHANNELS == 7, "Channel conversion only available for 7 channels");
+		m_pLastChannelValues[0] = ((m_pReadSBusData[1] | m_pReadSBusData[2] << 8) & 0x07FF);
+		m_pLastChannelValues[1] = ((m_pReadSBusData[2] >> 3 | m_pReadSBusData[3] << 5) & 0x07FF);
+		m_pLastChannelValues[2] = ((m_pReadSBusData[3] >> 6 | m_pReadSBusData[4] << 2 | m_pReadSBusData[5] << 10) & 0x07FF);
+		m_pLastChannelValues[3] = ((m_pReadSBusData[5] >> 1 | m_pReadSBusData[6] << 7) & 0x07FF);
+		m_pLastChannelValues[4] = ((m_pReadSBusData[6] >> 4 | m_pReadSBusData[7] << 4) & 0x07FF);
+		m_pLastChannelValues[5] = ((m_pReadSBusData[7] >> 7 | m_pReadSBusData[8] << 1 | m_pReadSBusData[9] << 9) & 0x07FF);
+		m_pLastChannelValues[6] = ((m_pReadSBusData[9] >> 2 | m_pReadSBusData[10] << 6) & 0x07FF);
+
+		// Failsafe
+		m_nLastStatusByte = SBUS_SIGNAL_OK;
+		if (m_pReadSBusData[23] & (1 << 2))
+			m_nLastStatusByte |= SBUS_SIGNAL_LOST;
+		if (m_pReadSBusData[23] & (1 << 3))
+			m_nLastStatusByte |= SBUS_SIGNAL_FAILSAFE;
+
+		float fQuality = 0.0f;
+		for (unsigned int n = 0; n < NUM_FRAMES_USED_FOR_QUALITY_EVALUATION; ++n)
+			fQuality += (m_pbLastSignalStates[n]) ? 1.0f / NUM_FRAMES_USED_FOR_QUALITY_EVALUATION : 0.0f;
+	}
 }

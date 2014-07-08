@@ -10,6 +10,9 @@
 #define SBUS_SIGNAL_LOST        0x01
 #define SBUS_SIGNAL_FAILSAFE    0x02
 
+#define NUM_FRAMES_USED_FOR_QUALITY_EVALUATION 33
+#define NUM_CHANNELS 7
+
 class SBusReader
 {
   public:
@@ -17,14 +20,16 @@ class SBusReader
 
     void ProcessInput(void);
     bool FetchChannelData(int16_t *pTarget, uint8_t &rStatusByte);
-
+	
     bool IsDataAvailable() const { return m_bDataAvailable; }
   
   private:
     void ItlStartReadingPayload();
     void ItlAbortReadingPayload();
     void ItlFinishReadingPayload();
+	void ItlUpdateSignalQualityCounter();
     void ItlSuccessfullReadPayload();
+	void ItlUpdateChannelValuesFromReadSBUSData();
     
     /// Tries to resync by reading bytes until the searched byte is found and consumed
     /// returns true if searched byte was found and consumed, false if no data is left and it was not found
@@ -42,7 +47,15 @@ class SBusReader
     
     // The latest read sbus data
     uint8_t m_pReadSBusData[25];
+
+	int16_t m_pLastChannelValues[NUM_CHANNELS];
+	uint8_t m_nLastStatusByte;
+	float	m_fCurrentSignalQuality;
+
+	bool	m_pbLastSignalStates[NUM_FRAMES_USED_FOR_QUALITY_EVALUATION];
+	int		m_iCurPtrForLastSignalStates;
                 
+	int m_iCorrectFrames, m_iWrongFrames, m_iFalseCorrect;
 
 };
 
