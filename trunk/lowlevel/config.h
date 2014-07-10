@@ -22,6 +22,9 @@
 #define OUTPUT_PIN_ESC_REAR_LEFT 21
 #define OUTPUT_PIN_ESC_REAR_RIGHT 20
 
+#define MAX_ANGLE_SOLL_PITCH 45.0f
+#define MAX_ANGLE_SOLL_ROLL 45.0f
+
 template<typename T> void debug_print(T message)
 {
 #if LOWLEVELCONFIG_ENABLE_DEBUGGING

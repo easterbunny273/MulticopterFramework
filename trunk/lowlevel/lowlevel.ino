@@ -12,6 +12,7 @@
 #include "helper_3dmath.h"
 #include "NauticalOrientation.h"
 #include "ThrottleCalculator_Quadro.h"
+#include "PIDRegler.h"
 
 SBusReader sBus;
 IGyroReader * pGyroReader = NULL;
@@ -21,6 +22,18 @@ bool bSollInitialized = false;
 int16_t gLastChannelValues[7];
 
 ThrottleCalculator_Quadro ThrottleCalculator;
+
+#define PID_ROLL_NICK_P 4.0f
+#define PID_ROLL_NICK_I 0.0f
+#define PID_ROLL_NICK_D 0.0f
+#define PID_YAW_P 4.0f
+#define PID_YAW_I 0.0f
+#define PID_YAW_D 0.0f
+#define PID_HERTZ 100
+
+PIDRegler PIDRegler_Roll(PID_ROLL_NICK_P, PID_ROLL_NICK_I, PID_ROLL_NICK_D, PID_HERTZ);
+PIDRegler PIDRegler_Pitch(PID_ROLL_NICK_P, PID_ROLL_NICK_I, PID_ROLL_NICK_D, PID_HERTZ);
+PIDRegler PIDRegler_Yaw(PID_YAW_P, PID_YAW_I, PID_YAW_D, PID_HERTZ);
 
 Servo ESC_FrontLeft, ESC_FrontRight, ESC_RearLeft, ESC_RearRight;
 
@@ -140,12 +153,32 @@ void loop()
 	// put the nose up, while when fPitch = fRoll = fYaw = 0.0f, 
 	// all 4 motors should run at the same speed.
 
-	// QUICK_HACK: While we have no PID governor and no feedback loop from the gyro,
-	// we simply use the input from the radio receiver to set these values
+	if (SollLage.roll < -MAX_ANGLE_SOLL_ROLL) SollLage.roll = -MAX_ANGLE_SOLL_ROLL;
+	if (SollLage.roll > MAX_ANGLE_SOLL_ROLL) SollLage.roll = MAX_ANGLE_SOLL_ROLL;
 
-	float fPitch = (gLastChannelValues[1] - 1024) / 1024.0;
-	float fRoll = (gLastChannelValues[0] - 1024) / 1024.0;
-	float fYaw = (gLastChannelValues[3] - 1024) / 1024.0;
+	if (SollLage.pitch < -MAX_ANGLE_SOLL_PITCH) SollLage.pitch = -MAX_ANGLE_SOLL_PITCH;
+	if (SollLage.pitch > MAX_ANGLE_SOLL_PITCH) SollLage.pitch = MAX_ANGLE_SOLL_PITCH;
+
+	while (SollLage.yaw < -180) SollLage.yaw += 180;
+	while (SollLage.yaw > 180) SollLage.yaw -= 180;
+
+	float fRollDiff = SollLage.roll - IstLage.roll;
+	float fPitchDiff = SollLage.pitch - IstLage.pitch;
+	float fYawDiff = SollLage.yaw - SollLage.yaw;
+
+	float fRollDiffNormalized = fRollDiff / 180;
+	float fPitchDiffNormalized = fPitchDiff / 180;
+	float fYawDiffNormalized = fYawDiff / 180;
+
+	float fMagicMultiplier = 2.0f;
+
+	float fReglerOutput_Roll = PIDRegler_Roll.Process(fRollDiffNormalized) * fMagicMultiplier;
+	float fReglerOutput_Pitch = PIDRegler_Pitch.Process(fPitchDiffNormalized) * fMagicMultiplier;
+	float fReglerOutput_Yaw = PIDRegler_Yaw.Process(fYawDiffNormalized) * fMagicMultiplier;
+
+	//debug_print("regler_1: "); Serial.print(fReglerOutput_Roll,10); debug_print(" input_1: "); debug_print(fRollDiffNormalized);
+	//debug_print(" regler_2: "); Serial.print(fReglerOutput_Pitch, 10); debug_print(" input_2: "); debug_print(fPitchDiffNormalized);
+	//debug_print(" regler_3: "); Serial.print(fReglerOutput_Yaw, 10); debug_print(" input_3: "); debug_println(fYawDiffNormalized);
 
 	// the target throttle value
 	float fThrottle = gLastChannelValues[2] / 2048.0;
@@ -153,13 +186,13 @@ void loop()
 	// 4) calculate outputs for ESCs
 	float fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight;
 
-	ThrottleCalculator.Calculate(fPitch, fRoll, fYaw, fThrottle, fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight);
+	ThrottleCalculator.Calculate(fReglerOutput_Pitch, fReglerOutput_Roll, fReglerOutput_Yaw, fThrottle, fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight);
 
 	ESC_FrontLeft.write(map(fThrottleFrontLeft * 1000, 0, 1000, 0, 179));
 	ESC_FrontRight.write(map(fThrottleFrontRight * 1000, 0, 1000, 0, 179));
 	ESC_RearLeft.write(map(fThrottleRearLeft * 1000, 0, 1000, 0, 179));
 	ESC_RearRight.write(map(fThrottleRearRight * 1000, 0, 1000, 0, 179));
 
-	debug_print("lf: "); debug_print(fThrottleFrontLeft); debug_print(" rf: "); debug_print(fThrottleFrontRight);
-	debug_print(" lr: "); debug_print(fThrottleRearLeft); debug_print(" rr: "); debug_println(fThrottleRearRight);
+	debug_print("left_front: "); debug_print(fThrottleFrontLeft); debug_print(" right_front: "); debug_print(fThrottleFrontRight);
+	debug_print(" left_rear: "); debug_print(fThrottleRearLeft); debug_print(" right_rear: "); debug_println(fThrottleRearRight);
 }
