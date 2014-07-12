@@ -32,6 +32,14 @@ public:
 			float fD = m_fD_Factor * ((fCurrentError - m_fLastError) / nTimeStepInMilliseconds);
 			float fI = m_fI_Factor * m_fSummedError;
 
+                        // clamp p, d and i
+                        if (fP < -1.0f) fP = -1.0f;
+                        if (fP > 1.0f) fP = 1.0f;
+                        if (fI < -1.0f) fI = -1.0f;
+                        if (fI > 1.0f) fI = 1.0f;
+                        if (fD < -1.0f) fD = -1.0f;
+                        if (fD > 1.0f) fD = 1.0f;
+                        
 			// calculate output
 			float fOutput = fP + fD + fI;
 

@@ -23,13 +23,14 @@ int16_t gLastChannelValues[7];
 
 ThrottleCalculator_Quadro ThrottleCalculator;
 
-#define PID_ROLL_NICK_P 4.0f
+#define PID_ROLL_NICK_P 3.0f
 #define PID_ROLL_NICK_I 0.0f
-#define PID_ROLL_NICK_D 0.0f
+//#define PID_ROLL_NICK_I 0.001f
+#define PID_ROLL_NICK_D 170.0f
 #define PID_YAW_P 4.0f
 #define PID_YAW_I 0.0f
 #define PID_YAW_D 0.0f
-#define PID_HERTZ 100
+#define PID_HERTZ 300
 
 PIDRegler PIDRegler_Roll(PID_ROLL_NICK_P, PID_ROLL_NICK_I, PID_ROLL_NICK_D, PID_HERTZ);
 PIDRegler PIDRegler_Pitch(PID_ROLL_NICK_P, PID_ROLL_NICK_I, PID_ROLL_NICK_D, PID_HERTZ);
@@ -37,8 +38,11 @@ PIDRegler PIDRegler_Yaw(PID_YAW_P, PID_YAW_I, PID_YAW_D, PID_HERTZ);
 
 Servo ESC_FrontLeft, ESC_FrontRight, ESC_RearLeft, ESC_RearRight;
 
+unsigned long nStartupTime = 0;
+
 void setup()
 {
+  nStartupTime=millis();
 	// 0.0) Setup Debug Device and PINS 
 #if LOWLEVELCONFIG_ENABLE_DEBUGGING
 	LOWLEVELCONFIG_DEBUG_DEVICE.begin(57400);
@@ -131,15 +135,17 @@ void loop()
 
 	if (sBus.IsDataAvailable())
 	{
+  
+                debug_println("sbus-read");
 		int16_t pChannels[7];
 		uint8_t nStatus;
 		sBus.FetchChannelData(pChannels, nStatus);
 
-		if (nStatus == 0)
+		//if (nStatus == 0)
 		{
-			SollLage.roll += (pChannels[0] - 1024) / 100;
+		/*	SollLage.roll += (pChannels[0] - 1024) / 100;
 			SollLage.pitch += (pChannels[1] - 1024) / 100;
-			SollLage.yaw += (pChannels[3] - 1024) / 100;
+			SollLage.yaw += (pChannels[3] - 1024) / 100;*/
 
 			// QUICK HACK, see below
 			memcpy(gLastChannelValues, pChannels, sizeof(int16_t) * 7);
@@ -164,7 +170,7 @@ void loop()
 
 	float fRollDiff = SollLage.roll - IstLage.roll;
 	float fPitchDiff = SollLage.pitch - IstLage.pitch;
-	float fYawDiff = SollLage.yaw - SollLage.yaw;
+	float fYawDiff = SollLage.yaw - IstLage.yaw;
 
 	float fRollDiffNormalized = fRollDiff / 180;
 	float fPitchDiffNormalized = fPitchDiff / 180;
@@ -180,8 +186,9 @@ void loop()
 	//debug_print(" regler_2: "); Serial.print(fReglerOutput_Pitch, 10); debug_print(" input_2: "); debug_print(fPitchDiffNormalized);
 	//debug_print(" regler_3: "); Serial.print(fReglerOutput_Yaw, 10); debug_print(" input_3: "); debug_println(fYawDiffNormalized);
 
+        
 	// the target throttle value
-	float fThrottle = gLastChannelValues[2] / 2048.0;
+	float fThrottle = (millis() - nStartupTime) < 3000 ? 0.1f : 0.3f;//nStarupTime - millis();//gLastChannelValues[2] / 2048.0;
 
 	// 4) calculate outputs for ESCs
 	float fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight;
