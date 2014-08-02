@@ -23,11 +23,11 @@ int16_t gLastChannelValues[7];
 
 ThrottleCalculator_Quadro ThrottleCalculator;
 
-#define PID_ROLL_NICK_P 3.0f
-#define PID_ROLL_NICK_I 0.0f
+#define PID_ROLL_NICK_P 0.7f
+#define PID_ROLL_NICK_I 0.005f
 //#define PID_ROLL_NICK_I 0.001f
-#define PID_ROLL_NICK_D 170.0f
-#define PID_YAW_P 4.0f
+#define PID_ROLL_NICK_D 0.0f
+#define PID_YAW_P 0.0f
 #define PID_YAW_I 0.0f
 #define PID_YAW_D 0.0f
 #define PID_HERTZ 300
@@ -188,7 +188,9 @@ void loop()
 
         
 	// the target throttle value
-	float fThrottle = (millis() - nStartupTime) < 3000 ? 0.1f : 0.3f;//nStarupTime - millis();//gLastChannelValues[2] / 2048.0;
+	float fThrottle = (gLastChannelValues[2] / 2048.0 - 0.18) * 1 / (1.0 - 2*0.18);
+
+	debug_println(fThrottle);
 
 	// 4) calculate outputs for ESCs
 	float fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight;
