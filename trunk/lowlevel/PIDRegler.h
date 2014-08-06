@@ -17,7 +17,7 @@ public:
 		m_fLastOutput = 0.0f;
 	};
 
-	float Process(float fCurrentError)
+	float Process(float fCurrentError, bool bUseIntegral)
 	{
 		unsigned int nCurrentTimestamp_Millis = millis();
 		unsigned long nTimeStepInMilliseconds = (m_nLastProcessedTime>0) ? (nCurrentTimestamp_Millis - m_nLastProcessedTime) : 1;
@@ -30,7 +30,8 @@ public:
 
 			float fP = m_fP_Factor * fCurrentError;
 			float fD = m_fD_Factor * ((fCurrentError - m_fLastError) / nTimeStepInMilliseconds);
-			float fI = m_fI_Factor * m_fSummedError;
+			float fI = (bUseIntegral) ? m_fI_Factor * m_fSummedError : 0;
+			if (bUseIntegral == false) m_fSummedError = 0;
 
                         // clamp p, d and i
                         if (fP < -1.0f) fP = -1.0f;
@@ -64,9 +65,9 @@ public:
 
 	};
 
-	float Process(float fSoll, float fIst)
+	float Process(float fSoll, float fIst, bool bUseIntegral)
 	{
-		return Process(fSoll - fIst);
+		return Process(fSoll - fIst, bUseIntegral);
 	};
 
 private:

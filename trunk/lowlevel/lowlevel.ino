@@ -23,14 +23,14 @@ int16_t gLastChannelValues[7];
 
 ThrottleCalculator_Quadro ThrottleCalculator;
 
-#define PID_ROLL_NICK_P 0.7f
+#define PID_ROLL_NICK_P 0.6f
 #define PID_ROLL_NICK_I 0.005f
 //#define PID_ROLL_NICK_I 0.001f
-#define PID_ROLL_NICK_D 0.0f
-#define PID_YAW_P 0.0f
+#define PID_ROLL_NICK_D 100.0f
+#define PID_YAW_P 4.0f
 #define PID_YAW_I 0.0f
 #define PID_YAW_D 0.0f
-#define PID_HERTZ 300
+#define PID_HERTZ 100
 
 PIDRegler PIDRegler_Roll(PID_ROLL_NICK_P, PID_ROLL_NICK_I, PID_ROLL_NICK_D, PID_HERTZ);
 PIDRegler PIDRegler_Pitch(PID_ROLL_NICK_P, PID_ROLL_NICK_I, PID_ROLL_NICK_D, PID_HERTZ);
@@ -141,14 +141,37 @@ void loop()
 		uint8_t nStatus;
 		sBus.FetchChannelData(pChannels, nStatus);
 
+		int iModus = 0;
+		if (gLastChannelValues[5] > 950 && gLastChannelValues[5] < 1100) iModus = 1;
+		if (gLastChannelValues[5] > 100 && gLastChannelValues[5] < 200) iModus = 2;
 		//if (nStatus == 0)
 		{
-		/*	SollLage.roll += (pChannels[0] - 1024) / 100;
-			SollLage.pitch += (pChannels[1] - 1024) / 100;
-			SollLage.yaw += (pChannels[3] - 1024) / 100;*/
+			if (iModus == 0)
+			{
+				SollLage.roll = 0;
+				SollLage.pitch = 0;
+				//SollLage.yaw = 0;
+			}
+			else if (iModus == 1)
+			{
+				SollLage.roll = 10 * (pChannels[0] - 1024) / 100.0;
+				SollLage.pitch = 10 * (pChannels[1] - 1024) / 100.0;
+
+				float fYawSignal = (pChannels[3] - 1024) / 250.0;
+				SollLage.yaw += (abs(fYawSignal) > 0.01f) ? fYawSignal : 0.0f;
+			}
+			else if (iModus == 2)
+			{
+				SollLage.roll += (pChannels[0] - 1024) / 500.0;
+				SollLage.pitch += (pChannels[1] - 1024) / 500.0;
+				SollLage.yaw += (pChannels[3] - 1024) / 300.0;
+			}
+			
 
 			// QUICK HACK, see below
 			memcpy(gLastChannelValues, pChannels, sizeof(int16_t) * 7);
+			//debug_println(gLastChannelValues[5]);
+
 		}
 	}
 	
@@ -168,6 +191,7 @@ void loop()
 	while (SollLage.yaw < -180) SollLage.yaw += 180;
 	while (SollLage.yaw > 180) SollLage.yaw -= 180;
 
+	bool bUseIntegral = gLastChannelValues[6] > 500 ? true : false;
 	float fRollDiff = SollLage.roll - IstLage.roll;
 	float fPitchDiff = SollLage.pitch - IstLage.pitch;
 	float fYawDiff = SollLage.yaw - IstLage.yaw;
@@ -178,9 +202,9 @@ void loop()
 
 	float fMagicMultiplier = 2.0f;
 
-	float fReglerOutput_Roll = PIDRegler_Roll.Process(fRollDiffNormalized) * fMagicMultiplier;
-	float fReglerOutput_Pitch = PIDRegler_Pitch.Process(fPitchDiffNormalized) * fMagicMultiplier;
-	float fReglerOutput_Yaw = PIDRegler_Yaw.Process(fYawDiffNormalized) * fMagicMultiplier;
+	float fReglerOutput_Roll = PIDRegler_Roll.Process(fRollDiffNormalized, bUseIntegral) * fMagicMultiplier;
+	float fReglerOutput_Pitch = PIDRegler_Pitch.Process(fPitchDiffNormalized, bUseIntegral) * fMagicMultiplier;
+	float fReglerOutput_Yaw = PIDRegler_Yaw.Process(fYawDiffNormalized, bUseIntegral) * fMagicMultiplier;
 
 	//debug_print("regler_1: "); Serial.print(fReglerOutput_Roll,10); debug_print(" input_1: "); debug_print(fRollDiffNormalized);
 	//debug_print(" regler_2: "); Serial.print(fReglerOutput_Pitch, 10); debug_print(" input_2: "); debug_print(fPitchDiffNormalized);
@@ -190,7 +214,7 @@ void loop()
 	// the target throttle value
 	float fThrottle = (gLastChannelValues[2] / 2048.0 - 0.18) * 1 / (1.0 - 2*0.18);
 
-	debug_println(fThrottle);
+	//debug_println(fThrottle);
 
 	// 4) calculate outputs for ESCs
 	float fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight;
@@ -201,7 +225,7 @@ void loop()
 	ESC_FrontRight.write(map(fThrottleFrontRight * 1000, 0, 1000, 0, 179));
 	ESC_RearLeft.write(map(fThrottleRearLeft * 1000, 0, 1000, 0, 179));
 	ESC_RearRight.write(map(fThrottleRearRight * 1000, 0, 1000, 0, 179));
-
-	debug_print("left_front: "); debug_print(fThrottleFrontLeft); debug_print(" right_front: "); debug_print(fThrottleFrontRight);
-	debug_print(" left_rear: "); debug_print(fThrottleRearLeft); debug_print(" right_rear: "); debug_println(fThrottleRearRight);
+	debug_println(SollLage.yaw);
+	//debug_print("left_front: "); debug_print(fThrottleFrontLeft); debug_print(" right_front: "); debug_print(fThrottleFrontRight);
+	//debug_print(" left_rear: "); debug_print(fThrottleRearLeft); debug_print(" right_rear: "); debug_println(fThrottleRearRight);
 }
