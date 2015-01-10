@@ -61,6 +61,15 @@ void setup()
 	delay(1000);
 	digitalWrite(5, HIGH);
 	delay(200);
+
+	// notification to check if new version was uploaded to teensy
+	for (unsigned int n = 0; n < 10; n++)
+	{
+		digitalWrite(13, HIGH);
+		delay(200);
+		digitalWrite(13, LOW);
+		delay(200);
+	}
 	
 	// 0.1) Setup I2C
 	Wire.begin();
