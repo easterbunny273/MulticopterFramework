@@ -188,9 +188,6 @@ void loop()
 	if (SollLage.pitch < -MAX_ANGLE_SOLL_PITCH) SollLage.pitch = -MAX_ANGLE_SOLL_PITCH;
 	if (SollLage.pitch > MAX_ANGLE_SOLL_PITCH) SollLage.pitch = MAX_ANGLE_SOLL_PITCH;
 
-	while (SollLage.yaw < -180) SollLage.yaw += 180;
-	while (SollLage.yaw > 180) SollLage.yaw -= 180;
-
 	bool bUseIntegral = gLastChannelValues[6] > 500 ? true : false;
 	float fRollDiff = SollLage.roll - IstLage.roll;
 	float fPitchDiff = SollLage.pitch - IstLage.pitch;
