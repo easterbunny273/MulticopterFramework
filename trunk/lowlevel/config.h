@@ -14,8 +14,15 @@
 #define LOWLEVELCONFIG_GYRO_USE_INTERRUPT false
 
 
+// Define if debugging (and catching assertions) is enabled or not
 #define LOWLEVELCONFIG_ENABLE_DEBUGGING true
-#define LOWLEVELCONFIG_DEBUG_DEVICE Serial
+
+// Define the serial output device dor debugging information
+#define LOWLEVELCONFIG_DEBUG_UART Serial
+
+// Set a let which blinks for 5 seconds if an assertion was wrong. 
+// To disable this behaviour, undef it.
+#define LOWLEVELCONFIG_DEBUG_ASSERT_LED 13
 
 #define OUTPUT_PIN_ESC_FRONT_LEFT 23
 #define OUTPUT_PIN_ESC_FRONT_RIGHT 22
@@ -24,19 +31,5 @@
 
 #define MAX_ANGLE_SOLL_PITCH 45.0f
 #define MAX_ANGLE_SOLL_ROLL 45.0f
-
-template<typename T> void debug_print(T message)
-{
-#if LOWLEVELCONFIG_ENABLE_DEBUGGING
-	LOWLEVELCONFIG_DEBUG_DEVICE.print(message);
-#endif
-};
-
-template<typename T> void debug_println(T message)
-{
-#if LOWLEVELCONFIG_ENABLE_DEBUGGING
-	LOWLEVELCONFIG_DEBUG_DEVICE.println(message);
-#endif
-};
 
 #endif 

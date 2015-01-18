@@ -26,29 +26,28 @@ public:
 		if ((nTimeStepInMilliseconds > m_nMilliSecondsBetweenProcessSteps) || 
 			(m_nLastProcessedTime == 0))
 		{
-			m_fSummedError += fCurrentError * nTimeStepInMilliseconds;
-
 			float fP = m_fP_Factor * fCurrentError;
 			float fD = m_fD_Factor * ((fCurrentError - m_fLastError) / nTimeStepInMilliseconds);
-			float fI = (bUseIntegral) ? m_fI_Factor * m_fSummedError : 0;
-			if (bUseIntegral == false) m_fSummedError = 0;
+			float fI = 0.0f;
+			
+			if (bUseIntegral)
+			{
+				m_fSummedError += fCurrentError * nTimeStepInMilliseconds;
+				fI = m_fI_Factor * m_fSummedError;
+			} 
+			else
+			{
+				// Reset summed error, so that using bUseIntegral for a short time resets the considered summed error
+				m_fSummedError = 0.0f;
+			}
 
-                        // clamp p, d and i
-                        if (fP < -1.0f) fP = -1.0f;
-                        if (fP > 1.0f) fP = 1.0f;
-                        if (fI < -1.0f) fI = -1.0f;
-                        if (fI > 1.0f) fI = 1.0f;
-                        if (fD < -1.0f) fD = -1.0f;
-                        if (fD > 1.0f) fD = 1.0f;
+			Utilities::Math::Clamp(fP, -1.0f, 1.0f);
+			Utilities::Math::Clamp(fI, -1.0f, 1.0f);
+			Utilities::Math::Clamp(fD, -1.0f, 1.0f);
                         
 			// calculate output
 			float fOutput = fP + fD + fI;
-
-			// clamp output
-			if (fOutput < -1.0f)
-				fOutput = -1.0f;
-			if (fOutput > 1.0f)
-				fOutput = 1.0f;
+			Utilities::Math::Clamp(fOutput, -1.0f, 1.0f);
 
 			// update member values
 			m_nLastProcessedTime	= nCurrentTimestamp_Millis;

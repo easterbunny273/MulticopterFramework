@@ -1,9 +1,11 @@
 #include "GyroReader_MPU6050.h"
 #include "MPU6050_6Axis_MotionApps20.h"
+#include "debug.h"
+
 #include <Arduino.h>
 #include <Wire.h>
 
-#define MPU6050_I2C_ADDRESS MPU6050_DEFAULT_ADDRESS	//< is 0x68 by default, can also be 0x69 depending on board
+#define MPU6050_I2C_ADDRESS MPU6050_DEFAULT_ADDRESS //< is 0x68 by default, can also be 0x69 depending on board
 
 // single instance of this class
 GyroReader_MPU6050 * GyroReader_MPU6050::s_pInstance = NULL;

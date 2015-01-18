@@ -41,7 +41,7 @@ void printHex(int num, int precision) {
 	sprintf(format, "0x%%.%dX", precision);
 
 	sprintf(tmp, format, num);
-	LOWLEVELCONFIG_DEBUG_DEVICE.print(tmp);
+	LOWLEVELCONFIG_DEBUG_UART.print(tmp);
 }
 
 bool SBusReader::FetchChannelData(int16_t *pTarget, uint8_t &rStatusByte)
@@ -119,13 +119,13 @@ void SBusReader::ProcessInput(void)
 		if (bIsStartByte || bResyncedToStartByte)
 		{
 			if (bResyncedToStartByte)
-				LOWLEVELCONFIG_DEBUG_DEVICE.println("RESYNCED_TO_STARTBYTE");
+				LOWLEVELCONFIG_DEBUG_UART.println("RESYNCED_TO_STARTBYTE");
 
 			ItlStartReadingPayload();
 		}			
 		else
 		{
-			LOWLEVELCONFIG_DEBUG_DEVICE.println("ABORTED");
+			LOWLEVELCONFIG_DEBUG_UART.println("ABORTED");
 
 			ItlAbortReadingPayload();
 			m_iWrongFrames++;
