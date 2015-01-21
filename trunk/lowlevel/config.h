@@ -20,7 +20,7 @@
 // Define the serial output device dor debugging information
 #define LOWLEVELCONFIG_DEBUG_UART Serial
 
-// Set a let which blinks for 5 seconds if an assertion was wrong. 
+// Set a let which ´starts blinking if an assertion was wrong. 
 // To disable this behaviour, undef it.
 #define LOWLEVELCONFIG_DEBUG_ASSERT_LED 13
 

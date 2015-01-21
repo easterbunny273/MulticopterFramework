@@ -1,4 +1,5 @@
 // TODO: Documentation, ...
+#include "assert.h"
 
 class PIDRegler
 {
@@ -19,13 +20,15 @@ public:
 
 	float Process(float fCurrentError, bool bUseIntegral)
 	{
-		unsigned int nCurrentTimestamp_Millis = millis();
-		unsigned long nTimeStepInMilliseconds = (m_nLastProcessedTime>0) ? (nCurrentTimestamp_Millis - m_nLastProcessedTime) : 1;
+		unsigned long nCurrentTimestamp_Millis = millis();
+		unsigned long nTimeStepInMilliseconds = (m_nLastProcessedTime>0) ? (nCurrentTimestamp_Millis - m_nLastProcessedTime) : 100;
 
 		// consider our sample frequency
 		if ((nTimeStepInMilliseconds > m_nMilliSecondsBetweenProcessSteps) || 
 			(m_nLastProcessedTime == 0))
 		{
+			assert(nTimeStepInMilliseconds > 0);
+
 			float fP = m_fP_Factor * fCurrentError;
 			float fD = m_fD_Factor * ((fCurrentError - m_fLastError) / nTimeStepInMilliseconds);
 			float fI = 0.0f;

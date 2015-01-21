@@ -3,6 +3,7 @@
 
 #include "SBusReader.h"
 #include "config.h"
+#include "debug.h"
 
 #define SBUS_BAUDRATE 100000
 #define SBUS_DEVICE LOWLEVELCONFIG_SBUS_DEVICE
@@ -60,6 +61,9 @@ void SBusReader::ProcessInput(void)
 {
   if (SBUS_DEVICE.available() > 24)
   {
+	  //debug_print("SBUS data available: ");
+	  //debug_println(SBUS_DEVICE.available());
+
     while(SBUS_DEVICE.available() > 0)
     {
       uint8_t cReadByte = SBUS_DEVICE.read();
@@ -99,12 +103,15 @@ void SBusReader::ProcessInput(void)
 						  m_pTempInBuffer[nn] = m_pTempInBuffer[n + nn];
 						
 					  m_iCurBufferIndex -= n;
+					  debug_println(m_iCurBufferIndex);
 				  }
 
 			  }
 
 			  if (bShifted == false)
 			  {
+				  debug_println("ABORT READING PAYLOAD");
+
 				  // something went wrong, abort
 				  ItlAbortReadingPayload();
 			  }
@@ -119,13 +126,13 @@ void SBusReader::ProcessInput(void)
 		if (bIsStartByte || bResyncedToStartByte)
 		{
 			if (bResyncedToStartByte)
-				LOWLEVELCONFIG_DEBUG_UART.println("RESYNCED_TO_STARTBYTE");
+				debug_println("RESYNCED_TO_STARTBYTE");
 
 			ItlStartReadingPayload();
 		}			
 		else
 		{
-			LOWLEVELCONFIG_DEBUG_UART.println("ABORTED");
+			debug_println("ABORTED");
 
 			ItlAbortReadingPayload();
 			m_iWrongFrames++;
@@ -159,8 +166,8 @@ void SBusReader::ItlStartReadingPayload()
 
 void SBusReader::ItlAbortReadingPayload()
 {
- // memset(m_pTempInBuffer, NULL, 25);
-  m_bIsReadingPayload = false;
+	memset(m_pTempInBuffer, NULL, sizeof(uint8_t) * 25);
+	m_bIsReadingPayload = false;
 }
 
 void SBusReader::ItlFinishReadingPayload()
@@ -169,7 +176,7 @@ void SBusReader::ItlFinishReadingPayload()
   m_bIsReadingPayload = false;
   
   // copy read payload
-  memcpy(m_pReadSBusData, m_pTempInBuffer,25);
+  memcpy(m_pReadSBusData, m_pTempInBuffer, sizeof(uint8_t) * 25);
 
   ItlUpdateSignalQualityCounter();
 

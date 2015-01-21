@@ -16,10 +16,10 @@ public:
 	{
 		// Based on the 3 input values (fPitch, fRoll, fYaw), calculate the output values
 		float fBaseThrottle = 4 * fInputThrottle;
-		rfThrottleFrontLeft = fBaseThrottle * (0.25f + 0.25f * (fRoll + fPitch - fYaw) / 3.0);
-		rfThrottleFrontRight = fBaseThrottle * (0.25f + 0.25f * (-fRoll + fPitch + fYaw) / 3.0);
-		rfThrottleRearLeft = fBaseThrottle * (0.25f + 0.25f * (fRoll - fPitch + fYaw) / 3.0);
-		rfThrottleRearRight = fBaseThrottle * (0.25f + 0.25f * (-fRoll - fPitch - fYaw) / 3.0);
+		rfThrottleFrontLeft = fBaseThrottle * (0.25f + 0.25f * (fRoll + fPitch - fYaw) / 3.0f);
+		rfThrottleFrontRight = fBaseThrottle * (0.25f + 0.25f * (-fRoll + fPitch + fYaw) / 3.0f);
+		rfThrottleRearLeft = fBaseThrottle * (0.25f + 0.25f * (fRoll - fPitch + fYaw) / 3.0f);
+		rfThrottleRearRight = fBaseThrottle * (0.25f + 0.25f * (-fRoll - fPitch - fYaw) / 3.0f);
 
 		// Make sure that all output values are in [0.0f, 1.0f]
 		Utilities::Math::Clamp(rfThrottleFrontLeft, 0.0f, 1.0f);

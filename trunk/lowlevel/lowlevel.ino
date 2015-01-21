@@ -25,7 +25,7 @@ bool bSollInitialized = false;
 int16_t gLastChannelValues[7];
 
 ThrottleCalculator_Quadro ThrottleCalculator;
-SerialDebugDisplay20x4 Display(Serial2);
+SerialDebugDisplay20x4 *pDisplay = NULL;
 
 #define PID_ROLL_NICK_P 0.6f
 #define PID_ROLL_NICK_I 0.001f
@@ -53,15 +53,23 @@ unsigned long nStartupTime = 0;
 
 void setup()
 {
-  nStartupTime=millis();
+	nStartupTime=millis();
 	// 0.0) Setup Debug Device and PINS 
 #if LOWLEVELCONFIG_ENABLE_DEBUGGING
 	LOWLEVELCONFIG_DEBUG_UART.begin(9600);
 #endif
 
 	// setup serial device for display (used by debug methods)
+	/*Serial2.begin(9600);
+	delay(1500);
+	Serial2.print(124);
+	Serial2.print(0x10);
+	delay(3000);*/
 	Serial2.begin(9600);
 	delay(500);
+
+	pDisplay = new SerialDebugDisplay20x4(Serial2);
+	inject_display(pDisplay);
 
 	// We use pin 13 for debug stuff (ON = Gyro works, OFF = Gyro doesnt work)
 	pinMode(13, OUTPUT);
@@ -128,9 +136,9 @@ void loop()
 		float fYaw, fPitch, fRoll;
 		pGyroReader->getYawPitchRoll(fYaw, fPitch, fRoll);
 
-		IstLage.pitch	= fPitch * 180.0f / 3.14159265359f;
-		IstLage.yaw		= fYaw  * 180.0f / 3.14159265359f;
-		IstLage.roll	= fRoll  * 180.0f / 3.14159265359f;
+		IstLage.pitch	= fPitch	* 180.0f / 3.141593f;
+		IstLage.yaw		= fYaw		* 180.0f / 3.141593f;
+		IstLage.roll	= fRoll		* 180.0f / 3.141593f;
 
 		// If "SollLage" is not initialized yet, set Yaw to current Yaw
 		if (bSollInitialized == false)
@@ -139,7 +147,7 @@ void loop()
 			bSollInitialized = true;
 		}
 
-	/*	debug_print("yaw("); debug_print(IstLage.yaw); debug_print("["); debug_print(SollLage.yaw); debug_print("]) ");
+		/*debug_print("yaw("); debug_print(IstLage.yaw); debug_print("["); debug_print(SollLage.yaw); debug_print("]) ");
 		debug_print("pitch("); debug_print(IstLage.pitch); debug_print("["); debug_print(SollLage.pitch); debug_print("]) ");
 		debug_print("roll("); debug_print(IstLage.roll); debug_print("["); debug_print(SollLage.roll); debug_println("]) ");*/
 	}
@@ -154,16 +162,19 @@ void loop()
 	//		if mode == RC_RELATIVE, set quaternion "q_soll" = "q_soll" + "q_rc"
 	//		if mode == RC_HIGHLEVEL, set quaternion "q_soll" from highlevel input
 
+	debug_println("start processing input");
 	sBus.ProcessInput();
+	debug_println("stop processing input");
 	
 
 	if (sBus.IsDataAvailable())
 	{
-  
+		debug_println("Data available");
 		int16_t pChannels[7];
 		uint8_t nStatus;
 		sBus.FetchChannelData(pChannels, nStatus);
 
+		debug_println("Data fetched");
 		int iModus = 0;
 		if (gLastChannelValues[RC_CHANNEL_PITCH] > 950 && gLastChannelValues[RC_CHANNEL_PITCH] < 1100) iModus = 1;
 		if (gLastChannelValues[RC_CHANNEL_PITCH] > 100 && gLastChannelValues[RC_CHANNEL_PITCH] < 200) iModus = 2;
@@ -176,21 +187,23 @@ void loop()
 			}
 			else if (iModus == 1)
 			{
-				SollLage.roll = (pChannels[RC_CHANNEL_ROLL] - 1024) / 20.0;
-				SollLage.pitch = (pChannels[RC_CHANNEL_NICK] - 1024) / 20.0;
+				SollLage.roll = (pChannels[RC_CHANNEL_ROLL] - 1024) / 20.0f;
+				SollLage.pitch = (pChannels[RC_CHANNEL_NICK] - 1024) / 20.0f;
 			}
 			else if (iModus == 2)
 			{
-				SollLage.roll += (pChannels[RC_CHANNEL_ROLL] - 1024) / 500.0;
-				SollLage.pitch += (pChannels[RC_CHANNEL_NICK] - 1024) / 500.0;
+				SollLage.roll += (pChannels[RC_CHANNEL_ROLL] - 1024) / 500.0f;
+				SollLage.pitch += (pChannels[RC_CHANNEL_NICK] - 1024) / 500.0f;
 			}
 
-			float fYawSignal = (pChannels[RC_CHANNEL_YAW] - 1024) / 300.0;
+			float fYawSignal = (pChannels[RC_CHANNEL_YAW] - 1024) / 300.0f;
 			SollLage.yaw += (abs(fYawSignal) > 0.02f) ? fYawSignal : 0.0f;
 			
 
 			// QUICK HACK, see below
 			memcpy(gLastChannelValues, pChannels, sizeof(int16_t) * 7);
+
+			debug_println("Data copied");
 		}
 	}
 	
@@ -201,6 +214,7 @@ void loop()
 	// put the nose up, while when fPitch = fRoll = fYaw = 0.0f, 
 	// all 4 motors should run at the same speed.
 
+	debug_println("Calculating differences");
 	Utilities::Math::Clamp(SollLage.roll, -MAX_ANGLE_SOLL_ROLL, MAX_ANGLE_SOLL_ROLL);
 	Utilities::Math::Clamp(SollLage.pitch, -MAX_ANGLE_SOLL_PITCH, MAX_ANGLE_SOLL_PITCH);
 
@@ -215,18 +229,23 @@ void loop()
 
 	float fMagicMultiplier = 2.0f;
 
+	debug_println("Processing PIDs");
+
 	float fReglerOutput_Roll = PIDRegler_Roll.Process(fRollDiffNormalized, bUseIntegral) * fMagicMultiplier;
 	float fReglerOutput_Pitch = PIDRegler_Pitch.Process(fPitchDiffNormalized, bUseIntegral) * fMagicMultiplier;
 	float fReglerOutput_Yaw = PIDRegler_Yaw.Process(fYawDiffNormalized, bUseIntegral) * fMagicMultiplier;
-       
+	debug_println("Processed PIDs");
+
 	// the target throttle value
-	float fThrottle = (gLastChannelValues[RC_CHANNEL_THROTTLE] / 2048.0 - 0.18) * 1 / (1.0 - 2*0.18);
+	float fThrottle = (gLastChannelValues[RC_CHANNEL_THROTTLE] / 2048.0f - 0.18f) * 1.0f / (1.0f - 2.0f*0.18f);
 
 	// 4) calculate outputs for ESCs
 	float fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight;
 
+	debug_println("Calculate motor values");
 	ThrottleCalculator.Calculate(fReglerOutput_Pitch, fReglerOutput_Roll, fReglerOutput_Yaw, fThrottle, fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight);
 
+	debug_println("Write motor values");
 	// Map values from [0.0, 1.0] to [0, 179] and send to ESCs
 	ESC_FrontLeft.write(map(fThrottleFrontLeft * 1000, 0, 1000, 0, 179));
 	ESC_FrontRight.write(map(fThrottleFrontRight * 1000, 0, 1000, 0, 179));
@@ -235,15 +254,17 @@ void loop()
 
 	bool bShowDebug = gLastChannelValues[RC_CHANNEL_DEBUG_1] < 500 ? true : false;
 
-	assert(fThrottleRearRight < 0.5f);
-
-	Display.SetAssertMessage("hallo du!");
 	
+	/*if (pDisplay != NULL)
+	{
+		debug_println("Write to display");
+		if (bShowDebug)
+			pDisplay->Print_Orientations_PID_And_MotorValues(IstLage.yaw, IstLage.pitch, IstLage.roll, SollLage.yaw, SollLage.pitch, SollLage.roll, fReglerOutput_Yaw, fReglerOutput_Pitch, fReglerOutput_Roll, fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearRight, fThrottleRearLeft);
+		else
+			pDisplay->PrintSettingsOverview(PID_ROLL_NICK_P, PID_ROLL_NICK_D, bUseIntegral ? PID_ROLL_NICK_I : 0);
 
-	if (bShowDebug)
-		Display.Print_Orientations_PID_And_MotorValues(IstLage.yaw, IstLage.pitch, IstLage.roll, SollLage.yaw, SollLage.pitch, SollLage.roll, fReglerOutput_Yaw, fReglerOutput_Pitch, fReglerOutput_Roll, fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearRight, fThrottleRearLeft);
-	else
-		Display.PrintSettingsOverview(PID_ROLL_NICK_P, PID_ROLL_NICK_D, bUseIntegral ? PID_ROLL_NICK_I : 0);
+		debug_println("Written to display");
+	}*/
 	
 
 	assert_update_led();

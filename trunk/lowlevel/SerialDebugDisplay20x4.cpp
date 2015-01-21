@@ -1,21 +1,21 @@
 // cmoellinger, 17.01.2015
 
 #include "SerialDebugDisplay20x4.h"
+#include "assert.h"
 
-
-void SerialDebugDisplay20x4::Print_Orientations_PID_And_MotorValues(double dCurrentYawInDegrees, /*< [0, 360[ */ 
-																	double dCurrentPitchInDegrees, 
-																	double dCurrentRollInDegrees, 
-																	double dDesiredYawInDegrees, 
-																	double dDesiredPitchInDegrees, 
-																	double dDesiredRollInDegrees, 
-																	double dPIDResultYawNormalized, /*< [-1, 1] */ 
-																	double dPIDResultPitchNormalized, 
-																	double dPIDResultRollNormalized,
-																	double dMotor1Result, /*< [0, 1] */ 
-																	double dMotor2Result, 
-																	double dMotor3Result, 
-																	double dMotor4Result)
+void SerialDebugDisplay20x4::Print_Orientations_PID_And_MotorValues(float dCurrentYawInDegrees, /*< [0, 360[ */
+	float dCurrentPitchInDegrees,
+	float dCurrentRollInDegrees,
+	float dDesiredYawInDegrees,
+	float dDesiredPitchInDegrees,
+	float dDesiredRollInDegrees,
+	float dPIDResultYawNormalized, /*< [-1, 1] */
+	float dPIDResultPitchNormalized,
+	float dPIDResultRollNormalized,
+	float dMotor1Result, /*< [0, 1] */
+	float dMotor2Result,
+	float dMotor3Result,
+	float dMotor4Result)
 {
 	ItlPrintYawPitchRollLine(0, 'Y', dCurrentYawInDegrees, dDesiredYawInDegrees, dPIDResultYawNormalized);
 	ItlPrintYawPitchRollLine(64, 'P', dCurrentPitchInDegrees, dDesiredPitchInDegrees, dPIDResultPitchNormalized);
@@ -24,14 +24,14 @@ void SerialDebugDisplay20x4::Print_Orientations_PID_And_MotorValues(double dCurr
 	ItlPrintResultingMotorValues(84, dMotor1Result, dMotor2Result, dMotor3Result, dMotor4Result);
 }
 
-void SerialDebugDisplay20x4::ItlPrintYawPitchRollLine(int iStartingPosition, char cOrientationIdentificator, double dCurrentValue, double dDesiredValue, double dPIDResult)
+void SerialDebugDisplay20x4::ItlPrintYawPitchRollLine(int iStartingPosition, char cOrientationIdentificator, float dCurrentValue, float dDesiredValue, float dPIDResult)
 {
-	static char sDoubleToStringPuffer_1[25];
-	static char sDoubleToStringPuffer_2[25];
-	static char sDoubleToStringPuffer_3[25];
-	static char sLinePuffer[25];
+	char sDoubleToStringPuffer_1[25] = "";
+	char sDoubleToStringPuffer_2[25] = "";;
+	char sDoubleToStringPuffer_3[25] = "";;
+	char sLinePuffer[25] = "";;
 
-	static char *sAdditionalSignedCharacterPuffer = NULL;
+	char *sAdditionalSignedCharacterPuffer = NULL;
 
 	// Create strings from given values
 	dtostrf(dCurrentValue, 6, 1, sDoubleToStringPuffer_1);
@@ -46,15 +46,19 @@ void SerialDebugDisplay20x4::ItlPrintYawPitchRollLine(int iStartingPosition, cha
 
 	// Combine line
 	sprintf(sLinePuffer, "%c%s %s %s%s\0", cOrientationIdentificator, sDoubleToStringPuffer_1, sDoubleToStringPuffer_2, sAdditionalSignedCharacterPuffer, sDoubleToStringPuffer_3);
+	assert(strlen(sLinePuffer) <= 20);
 
 	// Write line
 	ItlMoveToPosition(iStartingPosition);
 	m_rSerialOutputDevice.write(sLinePuffer);               // write out line
 }
 
-void SerialDebugDisplay20x4::ItlPrintResultingMotorValues(int iStartingPosition, double d1, double d2, double d3, double d4)
+void SerialDebugDisplay20x4::ItlPrintResultingMotorValues(int iStartingPosition, float d1, float d2, float d3, float d4)
 {
-	static char sBuffer1[20], sBuffer2[20], sBuffer3[20], sBuffer4[20];
+	char	sBuffer1[20] = "", 
+			sBuffer2[20] = "",
+			sBuffer3[20] = "",
+			sBuffer4[20] = "";
 	const int nNumMinWidth = 4;
 	const int nNumDecimals = 1;
 	dtostrf(d1, nNumMinWidth, nNumDecimals + 1, sBuffer1);
@@ -62,11 +66,12 @@ void SerialDebugDisplay20x4::ItlPrintResultingMotorValues(int iStartingPosition,
 	dtostrf(d3, nNumMinWidth, nNumDecimals + 1, sBuffer3);
 	dtostrf(d4, nNumMinWidth, nNumDecimals + 1, sBuffer4);
 
-	static char sLinePuffer[25];
+	char sLinePuffer[25];
 	sprintf(sLinePuffer, "M%s %s %s %s\0", sBuffer1, sBuffer2, sBuffer3, sBuffer4); // create strings from the numbers    
+	assert(strlen(sLinePuffer) <= 20);
 
 	// Write line
-
+	ItlMoveToPosition(iStartingPosition);
 	m_rSerialOutputDevice.write(sLinePuffer);               // write out line
 }
 
@@ -100,6 +105,7 @@ void SerialDebugDisplay20x4::ItlPrintSettings(int iStartingPosition, float fP, f
 
 	static char sLinePuffer[25];
 	sprintf(sLinePuffer, "P%sD%sI%s", sBuffer1, sBuffer2, sBuffer3); // create strings from the numbers    
+	assert(strlen(sLinePuffer) <= 20);
 
 	ItlMoveToPosition(iStartingPosition);
 	m_rSerialOutputDevice.write(sLinePuffer);
@@ -114,3 +120,14 @@ void SerialDebugDisplay20x4::SetAssertMessage(const char * szMessage)
 		strncpy(m_szDebugMessage, szMessage, lenOfMessage < 60 ? lenOfMessage : 60);
 	}		
 }
+
+SerialDebugDisplay20x4::SerialDebugDisplay20x4(Stream &rSerialOutputDevice) 
+	: m_rSerialOutputDevice(rSerialOutputDevice) 
+{ 
+	for (unsigned int n = 0; n < 60; n++) 
+		m_szDebugMessage[n] = 'a'; 
+	m_szDebugMessage[60] = 0; 
+
+	rSerialOutputDevice.write(0x7C);
+	rSerialOutputDevice.write(140);
+};
