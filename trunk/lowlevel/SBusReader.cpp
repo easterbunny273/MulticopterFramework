@@ -4,6 +4,7 @@
 #include "SBusReader.h"
 #include "config.h"
 #include "debug.h"
+#include "assert.h"
 
 #define SBUS_BAUDRATE 100000
 #define SBUS_DEVICE LOWLEVELCONFIG_SBUS_DEVICE
@@ -55,6 +56,8 @@ bool SBusReader::FetchChannelData(int16_t *pTarget, uint8_t &rStatusByte)
 
 	memcpy(pTarget, m_pLastChannelValues, sizeof(int16_t) * NUM_CHANNELS);
 	rStatusByte = m_nLastStatusByte;
+
+      return true;
 }
 
 void SBusReader::ProcessInput(void)
@@ -85,8 +88,6 @@ void SBusReader::ProcessInput(void)
           }
           else
           {
-			  m_iWrongFrames++;
-
 			  bool bShifted = false;
 
 			  // We assume that the current start byte actually was a
@@ -94,16 +95,17 @@ void SBusReader::ProcessInput(void)
 			  // start byte and shift data (e.g., if 0F is the start byte:
 			  // (0F 00 01 02 03 0F 0A 0B 0C) --> (0F 0A 0B [...])
 
-			  for (unsigned int n = 1; n < 24; ++n)
+			  for (unsigned int n = 1; n < 24 && !bShifted; ++n)
 			  {
 				  if (m_pTempInBuffer[n] == SBUS_PAYLOAD_STARTBYTE)
 				  {
 					  bShifted = true;
+
 					  for (unsigned int nn = 0; nn < n; ++nn)
 						  m_pTempInBuffer[nn] = m_pTempInBuffer[n + nn];
 						
 					  m_iCurBufferIndex -= n;
-					  debug_println(m_iCurBufferIndex);
+					  assert(m_iCurBufferIndex >= 0);
 				  }
 
 			  }
@@ -114,6 +116,8 @@ void SBusReader::ProcessInput(void)
 
 				  // something went wrong, abort
 				  ItlAbortReadingPayload();
+
+				  m_iWrongFrames++;
 			  }
           }
         }
@@ -136,10 +140,12 @@ void SBusReader::ProcessInput(void)
 
 			ItlAbortReadingPayload();
 			m_iWrongFrames++;
-		}          
+		}
       }
     }
   }
+
+  //debug_println(m_iCorrectFrames / (float) (m_iWrongFrames + m_iCorrectFrames));
 }
 
 bool SBusReader::ItlResyncTo(uint8_t nSearchedByte)
