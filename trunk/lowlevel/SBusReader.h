@@ -55,7 +55,7 @@ class SBusReader
 	bool	m_pbLastSignalStates[NUM_FRAMES_USED_FOR_QUALITY_EVALUATION];
 	int		m_iCurPtrForLastSignalStates;
                 
-	int m_iCorrectFrames, m_iWrongFrames, m_iFalseCorrect;
+	int		m_iCorrectBytes, m_iWrongBytes;
 
 };
 

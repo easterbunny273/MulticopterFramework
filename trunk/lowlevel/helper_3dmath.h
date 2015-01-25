@@ -61,6 +61,8 @@ class Quaternion {
 			x = rOther.x;
 			y = rOther.y;
 			z = rOther.z;
+                        
+                        return *this;
 		}
 
         Quaternion getProduct(Quaternion q) {

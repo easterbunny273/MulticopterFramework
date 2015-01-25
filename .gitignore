@@ -6,5 +6,4 @@ trunk/lowlevel/lowlevel.opensdf
 trunk/lowlevel/lowlevel.sdf
 trunk/lowlevel/Visual Micro/Configuration.Release.vmps.xml
 trunk/lowlevel/lowlevel.v11.suo
-trunk/lowlevel/lowlevel.vcxproj.filters
-trunk/lowlevel/lowlevel.vcxproj.user
+trunk/lowlevel/Debug/

@@ -3,23 +3,20 @@
 #include "SerialDebugDisplay20x4.h"
 #include "assert.h"
 
-void SerialDebugDisplay20x4::Print_Orientations_PID_And_MotorValues(float dCurrentYawInDegrees, /*< [0, 360[ */
-	float dCurrentPitchInDegrees,
-	float dCurrentRollInDegrees,
-	float dDesiredYawInDegrees,
-	float dDesiredPitchInDegrees,
-	float dDesiredRollInDegrees,
-	float dPIDResultYawNormalized, /*< [-1, 1] */
-	float dPIDResultPitchNormalized,
-	float dPIDResultRollNormalized,
-	float dMotor1Result, /*< [0, 1] */
-	float dMotor2Result,
-	float dMotor3Result,
-	float dMotor4Result)
+
+void SerialDebugDisplay20x4::Print_Orientations_PID_And_MotorValues(const NauticalOrientation& CurrentOrientation, 
+																	const NauticalOrientation& DesiredOrientation, 
+																	float dPIDResultYawNormalized, /*< [-1, 1] */ 
+																	float dPIDResultPitchNormalized, 
+																	float dPIDResultRollNormalized, 
+																	float dMotor1Result, /*< [0, 1] */ 
+																	float dMotor2Result, 
+																	float dMotor3Result, 
+																	float dMotor4Result)
 {
-	ItlPrintYawPitchRollLine(0, 'Y', dCurrentYawInDegrees, dDesiredYawInDegrees, dPIDResultYawNormalized);
-	ItlPrintYawPitchRollLine(64, 'P', dCurrentPitchInDegrees, dDesiredPitchInDegrees, dPIDResultPitchNormalized);
-	ItlPrintYawPitchRollLine(20, 'R', dCurrentRollInDegrees, dDesiredRollInDegrees, dPIDResultRollNormalized);
+	ItlPrintYawPitchRollLine(0, 'Y', CurrentOrientation.yaw, DesiredOrientation.yaw, dPIDResultYawNormalized);
+	ItlPrintYawPitchRollLine(64, 'P', CurrentOrientation.pitch, DesiredOrientation.pitch, dPIDResultPitchNormalized);
+	ItlPrintYawPitchRollLine(20, 'R', CurrentOrientation.roll, DesiredOrientation.roll, dPIDResultRollNormalized);
 
 	ItlPrintResultingMotorValues(84, dMotor1Result, dMotor2Result, dMotor3Result, dMotor4Result);
 }
@@ -45,7 +42,7 @@ void SerialDebugDisplay20x4::ItlPrintYawPitchRollLine(int iStartingPosition, cha
 		sAdditionalSignedCharacterPuffer = ""; //< in this case, the sign character is added to the stringified value automatically
 
 	// Combine line
-	sprintf(sLinePuffer, "%c%s %s %s%s\0", cOrientationIdentificator, sDoubleToStringPuffer_1, sDoubleToStringPuffer_2, sAdditionalSignedCharacterPuffer, sDoubleToStringPuffer_3);
+	sprintf(sLinePuffer, "%c%s %s %s%s", cOrientationIdentificator, sDoubleToStringPuffer_1, sDoubleToStringPuffer_2, sAdditionalSignedCharacterPuffer, sDoubleToStringPuffer_3);
 	assert(strlen(sLinePuffer) <= 20);
 
 	// Write line
@@ -67,7 +64,7 @@ void SerialDebugDisplay20x4::ItlPrintResultingMotorValues(int iStartingPosition,
 	dtostrf(d4, nNumMinWidth, nNumDecimals + 1, sBuffer4);
 
 	char sLinePuffer[25];
-	sprintf(sLinePuffer, "M%s %s %s %s\0", sBuffer1, sBuffer2, sBuffer3, sBuffer4); // create strings from the numbers    
+	sprintf(sLinePuffer, "M%s %s %s %s", sBuffer1, sBuffer2, sBuffer3, sBuffer4); // create strings from the numbers    
 	assert(strlen(sLinePuffer) <= 20);
 
 	// Write line

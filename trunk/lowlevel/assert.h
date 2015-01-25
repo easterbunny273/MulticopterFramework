@@ -15,7 +15,7 @@ void inject_display(SerialDebugDisplay20x4 *_pDisplay);
 #define assert( expr ) ((void)0)
 #else
 #define assert( exp ) \
-    ( (exp) ? (void)0 : itl_s_assert_handler( __LINE__, __FILE__, "#exp"))
+    ( (exp) ? (void)0 : itl_s_assert_handler( __LINE__, __FILE__, #exp))
 #endif 
 
 #endif

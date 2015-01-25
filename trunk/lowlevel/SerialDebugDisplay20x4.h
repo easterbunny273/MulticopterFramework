@@ -4,18 +4,15 @@
 #define __SERIALDEBUGDISPLAY20x4_H_
 
 #include <Stream.h>
+#include "NauticalOrientation.h"
 
 class SerialDebugDisplay20x4
 {
 public:
 	SerialDebugDisplay20x4(Stream &rSerialOutputDevice);
 
-	void Print_Orientations_PID_And_MotorValues(float dCurrentYawInDegrees, //< [0, 360[
-												float dCurrentPitchInDegrees,
-												float dCurrentRollInDegrees,
-												float dDesiredYawInDegrees,
-												float dDesiredPitchInDegrees,
-												float dDesiredRollInDegrees,
+	void Print_Orientations_PID_And_MotorValues(const NauticalOrientation& CurrentOrientation,
+												const NauticalOrientation& DesiredOrientation,
 												float dPIDResultYawNormalized, //< [-1, 1]
 												float dPIDResultPitchNormalized,
 												float dPIDResultRollNormalized,

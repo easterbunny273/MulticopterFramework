@@ -1,6 +1,6 @@
 #include "assert.h"
 
-bool g_AssertFired = true;
+bool g_AssertFired = false;
 unsigned long g_lTimeOfLastLedUpdate = 0;
 bool g_bLastLEDState = false;
 
@@ -20,7 +20,7 @@ void itl_s_assert_handler(int iLine, const char *szFile, char *szAssertExpressio
 
 	debug_print("Assertion \"");
 	debug_print(szAssertExpression);
-	debug_print(" failed on ");
+	debug_print("\" failed on ");
 	debug_print(szFile);
 	debug_print(":");
 	debug_println(iLine);

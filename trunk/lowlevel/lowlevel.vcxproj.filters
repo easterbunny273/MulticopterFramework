@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Hardware">
+      <UniqueIdentifier>{516de976-eca7-40bc-b648-aef249f205e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Hardware\SerialDebugDisplay 20x4">
+      <UniqueIdentifier>{b906da92-0f10-4a19-9fca-0db67bc98179}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Hardware\Gyro">
+      <UniqueIdentifier>{72f07bcf-e17e-4497-946d-a0242e1302c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Hardware\Gyro\MPU6050 %28I2CDev library%29">
+      <UniqueIdentifier>{c49208f5-17bc-43e1-bfb4-f56bb52f4aa4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Hardware\RC Receiver">
+      <UniqueIdentifier>{daefec88-f3c5-4d1a-a339-de36d0706a43}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utilities">
+      <UniqueIdentifier>{2ebe99bb-5f0c-4035-87c1-9d80014cf1b6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MPU6050.cpp">
+      <Filter>Hardware\Gyro\MPU6050 %28I2CDev library%29</Filter>
+    </ClCompile>
+    <ClCompile Include="SBusReader.cpp">
+      <Filter>Hardware\RC Receiver</Filter>
+    </ClCompile>
+    <ClCompile Include="I2Cdev.cpp">
+      <Filter>Hardware\Gyro\MPU6050 %28I2CDev library%29</Filter>
+    </ClCompile>
+    <ClCompile Include="GyroReader_MPU6050.cpp">
+      <Filter>Hardware\Gyro</Filter>
+    </ClCompile>
+    <ClCompile Include="SerialDebugDisplay20x4.cpp">
+      <Filter>Hardware\SerialDebugDisplay 20x4</Filter>
+    </ClCompile>
+    <ClCompile Include="assert.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryFree.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="helper_3dmath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NauticalOrientation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThrottleCalculator_Quadro.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PIDRegler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MPU6050.h">
+      <Filter>Hardware\Gyro\MPU6050 %28I2CDev library%29</Filter>
+    </ClInclude>
+    <ClInclude Include="MPU6050_6Axis_MotionApps20.h">
+      <Filter>Hardware\Gyro\MPU6050 %28I2CDev library%29</Filter>
+    </ClInclude>
+    <ClInclude Include="MPU6050_9Axis_MotionApps41.h">
+      <Filter>Hardware\Gyro\MPU6050 %28I2CDev library%29</Filter>
+    </ClInclude>
+    <ClInclude Include="SBusReader.h">
+      <Filter>Hardware\RC Receiver</Filter>
+    </ClInclude>
+    <ClInclude Include="I2Cdev.h">
+      <Filter>Hardware\Gyro\MPU6050 %28I2CDev library%29</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h" />
+    <ClInclude Include="GyroReader_MPU6050.h">
+      <Filter>Hardware\Gyro</Filter>
+    </ClInclude>
+    <ClInclude Include="IGyroReader.h">
+      <Filter>Hardware\Gyro</Filter>
+    </ClInclude>
+    <ClInclude Include="Utilities.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Visual Micro\.lowlevel.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="debug.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="assert.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="SerialDebugDisplay20x4.h">
+      <Filter>Hardware\SerialDebugDisplay 20x4</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryFree.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="lowlevel.ino" />
+  </ItemGroup>
+</Project>

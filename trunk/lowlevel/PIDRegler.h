@@ -73,7 +73,7 @@ public:
 	};
 
 private:
-	float m_fLastError;		
+	float m_fLastError;
 	float m_fSummedError;
 	float m_fP_Factor, m_fD_Factor, m_fI_Factor;
 	float m_fLastOutput;
