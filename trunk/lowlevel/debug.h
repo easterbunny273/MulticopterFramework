@@ -16,7 +16,7 @@ template<typename T> void debug_println(T message)
 	LOWLEVELCONFIG_DEBUG_UART.println(message);
 #endif
 };
-
+/*
 int freeMemory() {
 	uint32_t stackTop;
 	uint32_t heapTop;
@@ -31,6 +31,6 @@ int freeMemory() {
 
 	// The difference is the free, available ram.
 	return stackTop - heapTop;
-}
+}*/
 
 #endif

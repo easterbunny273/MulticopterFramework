@@ -33,7 +33,7 @@ SerialDebugDisplay20x4 *pDisplay = NULL;
 #define PID_YAW_P 4.0f
 #define PID_YAW_I 0.0f
 #define PID_YAW_D 0.0f
-#define PID_HERTZ 100
+#define PID_HERTZ 500
 
 #define NUM_CHANNELS 7
 #define RC_CHANNEL_ROLL 0
@@ -44,6 +44,9 @@ SerialDebugDisplay20x4 *pDisplay = NULL;
 #define RC_CHANNEL_PITCH 5
 #define RC_CHANNEL_USE_INTEGRAL 6
 
+#define THROTTLE_ARMED_THRESHOLD 0.03f
+#define THROTTLE_ARMED_TIMEOUT_SECONDS 5
+
 PIDRegler PIDRegler_Roll(PID_ROLL_NICK_P, PID_ROLL_NICK_I, PID_ROLL_NICK_D, PID_HERTZ);
 PIDRegler PIDRegler_Pitch(PID_ROLL_NICK_P, PID_ROLL_NICK_I, PID_ROLL_NICK_D, PID_HERTZ);
 PIDRegler PIDRegler_Yaw(PID_YAW_P, PID_YAW_I, PID_YAW_D, PID_HERTZ);
@@ -51,8 +54,11 @@ PIDRegler PIDRegler_Yaw(PID_YAW_P, PID_YAW_I, PID_YAW_D, PID_HERTZ);
 Servo ESC_FrontLeft, ESC_FrontRight, ESC_RearLeft, ESC_RearRight;
 
 unsigned long nStartupTime = 0;
+unsigned long g_lastTimeThrottleOver0 = 0;
 
 int16_t gLastChannelValues[NUM_CHANNELS];
+
+bool g_bArmed = false;
 
 void setup()
 {
@@ -77,6 +83,10 @@ void setup()
 	// We use pin 13 for debug stuff (ON = Gyro works, OFF = Gyro doesnt work)
 	pinMode(13, OUTPUT);
 	digitalWrite(13, LOW);
+
+	// We use pin 12 for "armed" LED
+	pinMode(12, OUTPUT);
+	digitalWrite(12, g_bArmed);
 
 	// We use pin 5 do cut-off gyro (fixing initializing problems)
 	pinMode(5, OUTPUT);
@@ -126,6 +136,7 @@ void setup()
 void loop()
 {
 	bool		bIstIsValid = false;
+	float		fThrottle = 0.0f;
 
 	// 0) Read HighLevel Input, if connected
 	//    TODO
@@ -170,9 +181,14 @@ void loop()
 		sBus.FetchChannelData(pChannels, nStatus);
 
 		int iModus = 0;
-		if (gLastChannelValues[RC_CHANNEL_PITCH] > 950 && gLastChannelValues[RC_CHANNEL_PITCH] < 1100) iModus = 1;
-		if (gLastChannelValues[RC_CHANNEL_PITCH] > 100 && gLastChannelValues[RC_CHANNEL_PITCH] < 200) iModus = 2;
-		if (nStatus == 0)
+		if (pChannels[RC_CHANNEL_PITCH] > 950 && pChannels[RC_CHANNEL_PITCH] < 1100) iModus = 1;
+		if (pChannels[RC_CHANNEL_PITCH] > 100 && pChannels[RC_CHANNEL_PITCH] < 200) iModus = 2;
+		if (pChannels[RC_CHANNEL_PITCH] > 1800) g_bArmed = false;
+
+		// the target throttle value
+		fThrottle = (pChannels[RC_CHANNEL_THROTTLE] / 2048.0f - 0.18f) * 1.0f / (1.0f - 2.0f*0.18f);
+
+		if (nStatus == 0 && g_bArmed && fThrottle >= THROTTLE_ARMED_THRESHOLD)
 		{
 			if (iModus == 0)
 			{
@@ -196,6 +212,36 @@ void loop()
 
 			// QUICK HACK, see below
 			memcpy(gLastChannelValues, pChannels, sizeof(int16_t) * NUM_CHANNELS);
+		}
+
+		if (!g_bArmed)
+		{
+			if (((pChannels[RC_CHANNEL_ROLL] - 1024) > 600) &&
+				((pChannels[RC_CHANNEL_YAW] - 1024) < -600) && 
+				fThrottle < THROTTLE_ARMED_THRESHOLD)
+			{
+				g_lastTimeThrottleOver0 = millis();
+				g_bArmed = true;
+			}
+			
+			SollLage.roll = SollLage.pitch = 0;
+			SollLage.yaw = IstLage.yaw;
+		}
+		else
+		{
+			if (fThrottle < THROTTLE_ARMED_THRESHOLD)
+			{
+				if ((millis() - g_lastTimeThrottleOver0) > THROTTLE_ARMED_TIMEOUT_SECONDS * 1000)
+				{
+					SollLage.roll = SollLage.pitch = 0;
+					SollLage.yaw = IstLage.yaw;
+					g_bArmed = false;
+				}
+			}
+			else
+			{
+				g_lastTimeThrottleOver0 = millis();
+			}
 		}
 	}
 	
@@ -224,14 +270,37 @@ void loop()
 	float fReglerOutput_Pitch = PIDRegler_Pitch.Process(fPitchDiffNormalized, bUseIntegral) * fMagicMultiplier;
 	float fReglerOutput_Yaw = PIDRegler_Yaw.Process(fYawDiffNormalized, bUseIntegral) * fMagicMultiplier;
 
-	// the target throttle value
-	float fThrottle = (gLastChannelValues[RC_CHANNEL_THROTTLE] / 2048.0f - 0.18f) * 1.0f / (1.0f - 2.0f*0.18f);
-
 	// 4) calculate outputs for ESCs
 	float fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight;
 
 	//debug_println("Calculate motor values");
 	ThrottleCalculator.Calculate(fReglerOutput_Pitch, fReglerOutput_Roll, fReglerOutput_Yaw, fThrottle, fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight);
+
+	/*fThrottleFrontLeft = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);
+	fThrottleFrontRight = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);
+	fThrottleRearLeft = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);
+	fThrottleRearRight = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);*/
+
+
+	if (!g_bArmed)
+	{
+		fThrottleFrontLeft		= 0.0f;
+		fThrottleFrontRight		= 0.0f;
+		fThrottleRearLeft		= 0.0f;
+		fThrottleRearRight		= 0.0f;
+	}
+	else
+	{
+		if (fThrottle < THROTTLE_ARMED_THRESHOLD)
+		{
+			fThrottleFrontLeft = THROTTLE_ARMED_THRESHOLD;
+			fThrottleFrontRight = THROTTLE_ARMED_THRESHOLD;
+			fThrottleRearLeft = THROTTLE_ARMED_THRESHOLD;
+			fThrottleRearRight = THROTTLE_ARMED_THRESHOLD;
+		}
+	}
+	digitalWrite(12, g_bArmed ? HIGH : LOW);
+	
 
 	// Map values from [0.0, 1.0] to [0, 179] and send to ESCs
 	ESC_FrontLeft.write(map(fThrottleFrontLeft * 1000, 0, 1000, 0, 179));
