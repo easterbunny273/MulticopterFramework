@@ -16,9 +16,12 @@
 #include "Utilities.h"
 #include "debug.h"
 #include "SerialDebugDisplay20x4.h"
+#include "Pixels.h"
 
 SBusReader sBus;
 IGyroReader * pGyroReader = NULL;
+
+//Pixels * pPixels = NULL;
 
 NauticalOrientation SollLage, IstLage;
 bool bSollInitialized = false;
@@ -27,13 +30,21 @@ bool bSollInitialized = false;
 ThrottleCalculator_Quadro ThrottleCalculator;
 SerialDebugDisplay20x4 *pDisplay = NULL;
 
+/*#define PID_ROLL_NICK_P 0.6f
+#define PID_ROLL_NICK_I 0.001f
+#define PID_ROLL_NICK_D 100.0f
+#define PID_YAW_P 4.0f
+#define PID_YAW_I 0.0f
+#define PID_YAW_D 0.0f
+#define PID_HERTZ 100*/
+
 #define PID_ROLL_NICK_P 0.6f
 #define PID_ROLL_NICK_I 0.001f
 #define PID_ROLL_NICK_D 100.0f
 #define PID_YAW_P 4.0f
 #define PID_YAW_I 0.0f
 #define PID_YAW_D 0.0f
-#define PID_HERTZ 500
+#define PID_HERTZ 100
 
 #define NUM_CHANNELS 7
 #define RC_CHANNEL_ROLL 0
@@ -68,6 +79,8 @@ void setup()
 	LOWLEVELCONFIG_DEBUG_UART.begin(9600);
 #endif
 
+	//pPixels = new Pixels();
+
 	// setup serial device for display (used by debug methods)
 	/*Serial2.begin(9600);
 	delay(1500);
@@ -85,27 +98,29 @@ void setup()
 	digitalWrite(13, LOW);
 
 	// We use pin 12 for "armed" LED
-	pinMode(12, OUTPUT);
-	digitalWrite(12, g_bArmed);
+	pinMode(ARMED_STATUS_LED_PIN, OUTPUT);
+	digitalWrite(ARMED_STATUS_LED_PIN, g_bArmed);
 
 	// We use pin 5 do cut-off gyro (fixing initializing problems)
-	pinMode(5, OUTPUT);
+	pinMode(GYRO_ONOFF_PIN, OUTPUT);
 		
 	// Shut down Gyro for a few milliseconds.
 	// Pin 5 should be connected to a corresponding transistor 
-	digitalWrite(5, LOW);
+	digitalWrite(GYRO_ONOFF_PIN, LOW);
 	delay(1000);
-	digitalWrite(5, HIGH);
+	digitalWrite(GYRO_ONOFF_PIN, HIGH);
 	delay(200);
 
 	// notification to check if new version was uploaded to teensy
-	/*for (unsigned int n = 0; n < 10; n++)
+	pinMode(13, OUTPUT);
+	for (unsigned int n = 0; n < 5; n++)
 	{
 		digitalWrite(13, HIGH);
 		delay(200);
 		digitalWrite(13, LOW);
 		delay(200);
-	}*/
+	}
+
 	
 	// 0.1) Setup I2C
 	Wire.begin();
@@ -117,10 +132,15 @@ void setup()
 	pGyroReader = new GyroReader_MPU6050;
 	bool bGyroInitialized = pGyroReader->begin();
 
+	pinMode(GYRO_SUCCESSFULL_INITIALIZED_STATUS_LED, OUTPUT);
 	if (bGyroInitialized)
-		digitalWrite(13, HIGH);
+	{
+		digitalWrite(GYRO_SUCCESSFULL_INITIALIZED_STATUS_LED, HIGH);
+	}
 	else
-		digitalWrite(13, LOW);
+	{
+		digitalWrite(GYRO_SUCCESSFULL_INITIALIZED_STATUS_LED, LOW);
+	}
 	
 	// 3) Setup output pins for ESCs
 	ESC_FrontLeft.attach(OUTPUT_PIN_ESC_FRONT_LEFT);
@@ -128,8 +148,23 @@ void setup()
 	ESC_RearLeft.attach(OUTPUT_PIN_ESC_REAR_LEFT);
 	ESC_RearRight.attach(OUTPUT_PIN_ESC_REAR_RIGHT);
 
+
 	// 4) Setup serial connection to high level device
 	
+	
+	// Test code to calibrate ESCS
+	
+	ESC_FrontLeft.write(179);
+	ESC_FrontRight.write(179);
+	ESC_RearLeft.write(179);
+	ESC_RearRight.write(179);
+
+	delay(2000);
+
+	ESC_FrontLeft.write(0);
+	ESC_FrontRight.write(0);
+	ESC_RearLeft.write(0);
+	ESC_RearRight.write(0);
 }
 
 
@@ -264,11 +299,11 @@ void loop()
 	float fPitchDiffNormalized = fPitchDiff / 180;
 	float fYawDiffNormalized = fYawDiff / 180;
 
-	float fMagicMultiplier = 2.0f;
+	float fMagicMultiplier = 4.0f;
 
 	float fReglerOutput_Roll = PIDRegler_Roll.Process(fRollDiffNormalized, bUseIntegral) * fMagicMultiplier;
 	float fReglerOutput_Pitch = PIDRegler_Pitch.Process(fPitchDiffNormalized, bUseIntegral) * fMagicMultiplier;
-	float fReglerOutput_Yaw = PIDRegler_Yaw.Process(fYawDiffNormalized, bUseIntegral) * fMagicMultiplier;
+	float fReglerOutput_Yaw = PIDRegler_Yaw.Process(fYawDiffNormalized, bUseIntegral);
 
 	// 4) calculate outputs for ESCs
 	float fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight;
@@ -276,10 +311,10 @@ void loop()
 	//debug_println("Calculate motor values");
 	ThrottleCalculator.Calculate(fReglerOutput_Pitch, fReglerOutput_Roll, fReglerOutput_Yaw, fThrottle, fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight);
 
-	/*fThrottleFrontLeft = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);
-	fThrottleFrontRight = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);
-	fThrottleRearLeft = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);
-	fThrottleRearRight = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);*/
+	//fThrottleFrontLeft = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);
+	//fThrottleFrontRight = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);
+	//fThrottleRearLeft = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);
+	//fThrottleRearRight = Utilities::Math::Clamp(fThrottle, 0.0f, 1.0f);
 
 
 	if (!g_bArmed)
@@ -299,7 +334,7 @@ void loop()
 			fThrottleRearRight = THROTTLE_ARMED_THRESHOLD;
 		}
 	}
-	digitalWrite(12, g_bArmed ? HIGH : LOW);
+	digitalWrite(ARMED_STATUS_LED_PIN, g_bArmed ? HIGH : LOW);
 	
 
 	// Map values from [0.0, 1.0] to [0, 179] and send to ESCs
@@ -319,8 +354,9 @@ void loop()
 			pDisplay->PrintSettingsOverview(PID_ROLL_NICK_P, PID_ROLL_NICK_D, bUseIntegral ? PID_ROLL_NICK_I : 0);
 	}
 	
-	//debug_print("freeMemory=");
-	//debug_println(freeMemory());
 
 	assert_update_led();
+
+	/*pPixels->SetMode(g_bArmed ? Pixels::BLINKING_MODE_IDLE : Pixels::BLINKING_MODE_DISARMED);
+	pPixels->Update();*/
 }

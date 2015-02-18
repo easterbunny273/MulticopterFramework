@@ -24,7 +24,7 @@ public:
 		unsigned long nTimeStepInMilliseconds = (m_nLastProcessedTime>0) ? (nCurrentTimestamp_Millis - m_nLastProcessedTime) : 100;
 
 		// consider our sample frequency
-		if ((nTimeStepInMilliseconds > m_nMilliSecondsBetweenProcessSteps) || 
+		if ((nTimeStepInMilliseconds >= m_nMilliSecondsBetweenProcessSteps) || 
 			(m_nLastProcessedTime == 0))
 		{
 			assert(nTimeStepInMilliseconds > 0);
@@ -44,9 +44,9 @@ public:
 				m_fSummedError = 0.0f;
 			}
 
-			Utilities::Math::Clamp(fP, -1.0f, 1.0f);
+			//Utilities::Math::Clamp(fP, -1.0f, 1.0f);
 			Utilities::Math::Clamp(fI, -1.0f, 1.0f);
-			Utilities::Math::Clamp(fD, -1.0f, 1.0f);
+			//Utilities::Math::Clamp(fD, -1.0f, 1.0f);
                         
 			// calculate output
 			float fOutput = fP + fD + fI;

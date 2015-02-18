@@ -47,7 +47,7 @@
       <AdditionalIncludeDirectories>C:\Program Files (x86)\Arduino 1.0.5\hardware\teensy\cores\teensy3;C:\Program Files (x86)\Arduino 1.0.5\hardware\teensy\cores\teensy3\utils;C:\Program Files (x86)\Arduino 1.0.5\hardware\teensy\cores\teensy3\avr;C:\Program Files (x86)\Arduino 1.0.5\libraries\Wire;C:\Program Files (x86)\Arduino 1.0.5\libraries\Wire\utility;C:\Program Files (x86)\Arduino 1.0.5\libraries\Servo;C:\Program Files (x86)\Arduino 1.0.5\libraries\Servo\utility;C:\Program Files (x86)\Arduino 1.0.5\libraries;C:\Program Files (x86)\Arduino 1.0.5\hardware\teensy\libraries;C:\Program Files (x86)\Visual Micro\Visual Micro for Arduino\Micro Platforms\default\debuggers;C:\Users\easterbunny\Documents\Arduino\libraries;C:\Program Files (x86)\Arduino 1.0.5\hardware\tools\arm-none-eabi\arm-none-eabi\include;C:\Program Files (x86)\Arduino 1.0.5\hardware\tools\arm-none-eabi\arm-none-eabi\include;C:\Program Files (x86)\Arduino 1.0.5\hardware\tools\arm-none-eabi\lib\gcc\arm-none-eabi\4.7.2\include;C:\Program Files (x86)\Arduino 1.0.5\hardware\tools\arm-none-eabi\lib\gcc\arm-none-eabi\4.7.2\include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>C:\Users\easterbunny\Documents\GitHub\MulticopterFramework\trunk\lowlevel\Visual Micro\.lowlevel.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <IgnoreStandardIncludePath>true</IgnoreStandardIncludePath>
-      <PreprocessorDefinitions>ARDUINO=105;ARDUINO_MAIN;__AVR__;__avr__;F_CPU=96000000;USB_SERIAL;LAYOUT_US_ENGLISH;__cplusplus;__MK20DX256__;TEENSYDUINO=118;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ARDUINO=105;ARDUINO_MAIN;__AVR__;__avr__;F_CPU=96000000;USB_SERIAL_HID;LAYOUT_US_ENGLISH;__cplusplus;__MK20DX256__;TEENSYDUINO=118;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
@@ -75,6 +75,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Adafruit_NeoPixel.h" />
     <ClInclude Include="assert.h" />
     <ClInclude Include="config.h">
       <FileType>CppCode</FileType>
@@ -92,7 +93,6 @@
     <ClInclude Include="IGyroReader.h">
       <FileType>CppCode</FileType>
     </ClInclude>
-    <ClInclude Include="MemoryFree.h" />
     <ClInclude Include="MPU6050.h">
       <FileType>CppCode</FileType>
     </ClInclude>
@@ -106,6 +106,7 @@
       <FileType>CppCode</FileType>
     </ClInclude>
     <ClInclude Include="PIDRegler.h" />
+    <ClInclude Include="Pixels.h" />
     <ClInclude Include="SBusReader.h">
       <FileType>CppCode</FileType>
     </ClInclude>
@@ -115,10 +116,10 @@
     <ClInclude Include="Visual Micro\.lowlevel.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Adafruit_NeoPixel.cpp" />
     <ClCompile Include="assert.cpp" />
     <ClCompile Include="GyroReader_MPU6050.cpp" />
     <ClCompile Include="I2Cdev.cpp" />
-    <ClCompile Include="MemoryFree.cpp" />
     <ClCompile Include="MPU6050.cpp" />
     <ClCompile Include="SBusReader.cpp" />
     <ClCompile Include="SerialDebugDisplay20x4.cpp" />
