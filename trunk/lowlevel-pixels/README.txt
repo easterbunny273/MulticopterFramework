@@ -1,0 +1,1 @@
+This scetch contains a firmware to control the NeoPixels strips mounted on the quadrocopter. They are controlled using an own scetch+arduino because it is not possible to control servos (-> ESCs) and NeoPixels from one arduino (see https://learn.adafruit.com/neopixels-and-servos/overview)

@@ -16,12 +16,9 @@
 #include "Utilities.h"
 #include "debug.h"
 #include "SerialDebugDisplay20x4.h"
-#include "Pixels.h"
 
 SBusReader sBus;
 IGyroReader * pGyroReader = NULL;
-
-//Pixels * pPixels = NULL;
 
 NauticalOrientation SollLage, IstLage;
 bool bSollInitialized = false;
@@ -165,6 +162,12 @@ void setup()
 	ESC_FrontRight.write(0);
 	ESC_RearLeft.write(0);
 	ESC_RearRight.write(0);
+
+	// Setup pixel mode output
+	pinMode(OUTPUT_PIN_NEOPIXELS_MODE_BIT1, OUTPUT);
+	pinMode(OUTPUT_PIN_NEOPIXELS_MODE_BIT2, OUTPUT);
+	digitalWrite(OUTPUT_PIN_NEOPIXELS_MODE_BIT1, LOW);
+	digitalWrite(OUTPUT_PIN_NEOPIXELS_MODE_BIT2, LOW);
 }
 
 
@@ -356,6 +359,11 @@ void loop()
 	
 
 	assert_update_led();
+
+	// Send mode of neopixels to secondary arduino (2 bits -> 4 modes available, but only 2 defined yet)
+	digitalWrite(OUTPUT_PIN_NEOPIXELS_MODE_BIT1, g_bArmed ? HIGH : LOW);
+	digitalWrite(OUTPUT_PIN_NEOPIXELS_MODE_BIT2, LOW);
+
 
 	/*pPixels->SetMode(g_bArmed ? Pixels::BLINKING_MODE_IDLE : Pixels::BLINKING_MODE_DISARMED);
 	pPixels->Update();*/
