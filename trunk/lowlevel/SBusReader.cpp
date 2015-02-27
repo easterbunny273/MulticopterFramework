@@ -36,6 +36,7 @@ void SBusReader::begin()
 }
 
 void printHex(int num, int precision) {
+#if LOWLEVELCONFIG_ENABLE_DEBUGGING
 	char tmp[16];
 	char format[128];
 
@@ -43,6 +44,7 @@ void printHex(int num, int precision) {
 
 	sprintf(tmp, format, num);
 	LOWLEVELCONFIG_DEBUG_UART.print(tmp);
+#endif
 }
 
 bool SBusReader::FetchChannelData(int16_t *pTarget, uint8_t &rStatusByte)

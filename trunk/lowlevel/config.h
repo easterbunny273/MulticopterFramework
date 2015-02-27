@@ -15,7 +15,7 @@
 
 
 // Define if debugging (and catching assertions) is enabled or not
-#define LOWLEVELCONFIG_ENABLE_DEBUGGING true
+#define LOWLEVELCONFIG_ENABLE_DEBUGGING false
 
 // Define the serial output device dor debugging information
 #define LOWLEVELCONFIG_DEBUG_UART Serial

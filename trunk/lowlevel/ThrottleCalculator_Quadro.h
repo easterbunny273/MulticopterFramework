@@ -23,11 +23,12 @@ public:
 
 		float fClampedBaseThrottle = fInputThrottle < 0.8f ? fInputThrottle : 0.8f; //< clamp the input throttle, otherwise the PID does not work at high throttle values
 
-		float fMagicPIDScaling = 0.125f; //< a constant which has been found to scale the PID values to a useable range
-		rfThrottleFrontLeft = fClampedBaseThrottle + fMagicPIDScaling*(fRoll + fPitch - fYaw) / 3.0f;
-		rfThrottleFrontRight = fClampedBaseThrottle + fMagicPIDScaling*(-fRoll + fPitch + fYaw) / 3.0f;
-		rfThrottleRearLeft = fClampedBaseThrottle + fMagicPIDScaling*(fRoll - fPitch + fYaw) / 3.0f;
-		rfThrottleRearRight = fClampedBaseThrottle + fMagicPIDScaling*(-fRoll - fPitch - fYaw) / 3.0f;
+		Utilities::Math::Clamp(fYaw, -0.3f, 0.3f);
+
+		rfThrottleFrontLeft = fClampedBaseThrottle + (fRoll + fPitch + fYaw) / 3.0f;
+		rfThrottleFrontRight = fClampedBaseThrottle + (-fRoll + fPitch - fYaw) / 3.0f;
+		rfThrottleRearLeft = fClampedBaseThrottle + (fRoll - fPitch - fYaw) / 3.0f;
+		rfThrottleRearRight = fClampedBaseThrottle + (-fRoll - fPitch + fYaw) / 3.0f;
 
 		// Make sure that all output values are in [0.0f, 1.0f]
 		Utilities::Math::Clamp(rfThrottleFrontLeft, 0.0f, 1.0f);

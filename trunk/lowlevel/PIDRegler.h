@@ -50,7 +50,7 @@ public:
                         
 			// calculate output
 			float fOutput = fP + fD + fI;
-			Utilities::Math::Clamp(fOutput, -1.0f, 1.0f);
+			//Utilities::Math::Clamp(fOutput, -1.0f, 1.0f);
 
 			// update member values
 			m_nLastProcessedTime	= nCurrentTimestamp_Millis;

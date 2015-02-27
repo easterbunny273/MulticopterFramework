@@ -36,6 +36,7 @@ void itl_s_assert_handler(int iLine, const char *szFile, char *szAssertExpressio
 // debug led if an assertion has failed until the board is restarted. 
 void assert_update_led()
 {
+#if LOWLEVELCONFIG_ENABLE_DEBUGGING
 #ifdef LOWLEVELCONFIG_DEBUG_ASSERT_LED
 	if (g_AssertFired)
 	{
@@ -49,5 +50,6 @@ void assert_update_led()
 			g_lTimeOfLastLedUpdate = lCurrentTime;
 		}
 	}
+#endif
 #endif
 }

@@ -35,11 +35,11 @@ SerialDebugDisplay20x4 *pDisplay = NULL;
 #define PID_YAW_D 0.0f
 #define PID_HERTZ 100*/
 
-#define PID_ROLL_NICK_P 0.6f
-#define PID_ROLL_NICK_I 0.001f
-#define PID_ROLL_NICK_D 100.0f
-#define PID_YAW_P 4.0f
-#define PID_YAW_I 0.0f
+#define PID_ROLL_NICK_P 0.3f
+#define PID_ROLL_NICK_I 0.0001f
+#define PID_ROLL_NICK_D 80.0f
+#define PID_YAW_P 0.8f
+#define PID_YAW_I 0.0000f
 #define PID_YAW_D 0.0f
 #define PID_HERTZ 100
 
@@ -79,13 +79,8 @@ void setup()
 	//pPixels = new Pixels();
 
 	// setup serial device for display (used by debug methods)
-	/*Serial2.begin(9600);
-	delay(1500);
-	Serial2.print(124);
-	Serial2.print(0x10);
-	delay(3000);*/
 	Serial2.begin(9600);
-	delay(500);
+	delay(100);
 
 	pDisplay = new SerialDebugDisplay20x4(Serial2);
 	inject_display(pDisplay);
@@ -195,7 +190,7 @@ void loop()
 		// If "SollLage" is not initialized yet, set Yaw to current Yaw
 		if (bSollInitialized == false)
 		{
-			SollLage.yaw = fYaw;
+			SollLage.yaw = IstLage.yaw;
 			bSollInitialized = true;
 		}
 	}
@@ -235,13 +230,13 @@ void loop()
 			}
 			else if (iModus == 1)
 			{
-				SollLage.roll = (pChannels[RC_CHANNEL_ROLL] - 1024) / 20.0f;
-				SollLage.pitch = (pChannels[RC_CHANNEL_NICK] - 1024) / 20.0f;
+				SollLage.roll = (pChannels[RC_CHANNEL_ROLL] - 1024) / 60.0f;
+				SollLage.pitch = (pChannels[RC_CHANNEL_NICK] - 1024) / 60.0f;
 			}
 			else if (iModus == 2)
 			{
-				SollLage.roll += (pChannels[RC_CHANNEL_ROLL] - 1024) / 500.0f;
-				SollLage.pitch += (pChannels[RC_CHANNEL_NICK] - 1024) / 500.0f;
+				SollLage.roll += (pChannels[RC_CHANNEL_ROLL] - 1024) / 2000.0f;
+				SollLage.pitch += (pChannels[RC_CHANNEL_NICK] - 1024) / 2000.0f;
 			}
 
 			float fYawSignal = (pChannels[RC_CHANNEL_YAW] - 1024) / 300.0f;
@@ -298,15 +293,15 @@ void loop()
 	float fPitchDiff = SollLage.pitch - IstLage.pitch;
 	float fYawDiff = SollLage.yaw - IstLage.yaw;
 
-	float fRollDiffNormalized = fRollDiff / 180;
-	float fPitchDiffNormalized = fPitchDiff / 180;
-	float fYawDiffNormalized = fYawDiff / 180;
+	float fRollDiffNormalized = fRollDiff / 180.0f;
+	float fPitchDiffNormalized = fPitchDiff / 180.0f;
+	float fYawDiffNormalized = fYawDiff / 180.0f;
 
 	float fMagicMultiplier = 4.0f;
 
 	float fReglerOutput_Roll = PIDRegler_Roll.Process(fRollDiffNormalized, bUseIntegral) * fMagicMultiplier;
 	float fReglerOutput_Pitch = PIDRegler_Pitch.Process(fPitchDiffNormalized, bUseIntegral) * fMagicMultiplier;
-	float fReglerOutput_Yaw = PIDRegler_Yaw.Process(fYawDiffNormalized, bUseIntegral);
+	float fReglerOutput_Yaw = PIDRegler_Yaw.Process(fYawDiffNormalized, bUseIntegral) * fMagicMultiplier;
 
 	// 4) calculate outputs for ESCs
 	float fThrottleFrontLeft, fThrottleFrontRight, fThrottleRearLeft, fThrottleRearRight;
@@ -346,6 +341,7 @@ void loop()
 	ESC_RearLeft.write(map(fThrottleRearLeft * 1000, 0, 1000, 0, 179));
 	ESC_RearRight.write(map(fThrottleRearRight * 1000, 0, 1000, 0, 179));
 
+	
 	bool bShowDebug = gLastChannelValues[RC_CHANNEL_DEBUG_1] < 500 ? true : false;
 
 	
@@ -364,7 +360,5 @@ void loop()
 	digitalWrite(OUTPUT_PIN_NEOPIXELS_MODE_BIT1, g_bArmed ? HIGH : LOW);
 	digitalWrite(OUTPUT_PIN_NEOPIXELS_MODE_BIT2, LOW);
 
-
-	/*pPixels->SetMode(g_bArmed ? Pixels::BLINKING_MODE_IDLE : Pixels::BLINKING_MODE_DISARMED);
-	pPixels->Update();*/
+	delay(5);
 }

@@ -43,7 +43,6 @@
     <ClCompile Include="assert.cpp">
       <Filter>Utilities</Filter>
     </ClCompile>
-    <ClCompile Include="Adafruit_NeoPixel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="helper_3dmath.h">
@@ -94,12 +93,6 @@
     </ClInclude>
     <ClInclude Include="SerialDebugDisplay20x4.h">
       <Filter>Hardware\SerialDebugDisplay 20x4</Filter>
-    </ClInclude>
-    <ClInclude Include="Pixels.h">
-      <Filter>Hardware</Filter>
-    </ClInclude>
-    <ClInclude Include="Adafruit_NeoPixel.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
