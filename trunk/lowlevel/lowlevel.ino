@@ -35,12 +35,12 @@ SerialDebugDisplay20x4 *pDisplay = NULL;
 #define PID_YAW_D 0.0f
 #define PID_HERTZ 100*/
 
-#define PID_ROLL_NICK_P 0.3f
-#define PID_ROLL_NICK_I 0.0001f
-#define PID_ROLL_NICK_D 80.0f
+#define PID_ROLL_NICK_P 0.25f //0.3f
+#define PID_ROLL_NICK_I 0.00001f
+#define PID_ROLL_NICK_D 75.0f // 80.0f
 #define PID_YAW_P 0.8f
 #define PID_YAW_I 0.0000f
-#define PID_YAW_D 0.0f
+#define PID_YAW_D 50.0f
 #define PID_HERTZ 100
 
 #define NUM_CHANNELS 7
@@ -230,13 +230,13 @@ void loop()
 			}
 			else if (iModus == 1)
 			{
-				SollLage.roll = (pChannels[RC_CHANNEL_ROLL] - 1024) / 60.0f;
-				SollLage.pitch = (pChannels[RC_CHANNEL_NICK] - 1024) / 60.0f;
+				SollLage.roll = (pChannels[RC_CHANNEL_ROLL] - 1024) / 30.0f;
+				SollLage.pitch = (pChannels[RC_CHANNEL_NICK] - 1024) / 30.0f;
 			}
 			else if (iModus == 2)
 			{
-				SollLage.roll += (pChannels[RC_CHANNEL_ROLL] - 1024) / 2000.0f;
-				SollLage.pitch += (pChannels[RC_CHANNEL_NICK] - 1024) / 2000.0f;
+				SollLage.roll += (pChannels[RC_CHANNEL_ROLL] - 1024) / 1000.0f;
+				SollLage.pitch += (pChannels[RC_CHANNEL_NICK] - 1024) / 1000.0f;
 			}
 
 			float fYawSignal = (pChannels[RC_CHANNEL_YAW] - 1024) / 300.0f;
@@ -343,7 +343,7 @@ void loop()
 
 	
 	bool bShowDebug = gLastChannelValues[RC_CHANNEL_DEBUG_1] < 500 ? true : false;
-
+	/*
 	
 	if (pDisplay != NULL)
 	{
@@ -354,7 +354,7 @@ void loop()
 	}
 	
 
-	assert_update_led();
+	assert_update_led(); */
 
 	// Send mode of neopixels to secondary arduino (2 bits -> 4 modes available, but only 2 defined yet)
 	digitalWrite(OUTPUT_PIN_NEOPIXELS_MODE_BIT1, g_bArmed ? HIGH : LOW);

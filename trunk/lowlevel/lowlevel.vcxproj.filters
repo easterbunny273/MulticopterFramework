@@ -82,9 +82,6 @@
     <ClInclude Include="Utilities.h">
       <Filter>Utilities</Filter>
     </ClInclude>
-    <ClInclude Include="Visual Micro\.lowlevel.vsarduino.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="debug.h">
       <Filter>Utilities</Filter>
     </ClInclude>
@@ -93,6 +90,9 @@
     </ClInclude>
     <ClInclude Include="SerialDebugDisplay20x4.h">
       <Filter>Hardware\SerialDebugDisplay 20x4</Filter>
+    </ClInclude>
+    <ClInclude Include="__vm\.lowlevel.vsarduino.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

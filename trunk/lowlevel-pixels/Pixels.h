@@ -98,7 +98,7 @@ void Pixels::Update()
 
 				if (iFlag % 2 == 0 && iFlag % 6 != 0)
 				{
-					for (unsigned int n = 0; n < 3; ++n)
+					for (unsigned int n = 0; n < 5; ++n)
 					{
 						// Red on the left side
 						m_pStripFrontLeft->setPixelColor(n, 255, 0, 0);
@@ -111,7 +111,7 @@ void Pixels::Update()
 				}
 				else
 				{
-					for (unsigned int n = 0; n < 3; ++n)
+					for (unsigned int n = 0; n < 5; ++n)
 					{
 						m_pStripFrontLeft->setPixelColor(n, 0, 0, 0);
 						m_pStripRearLeft->setPixelColor(n, 0, 0, 0);
@@ -120,7 +120,7 @@ void Pixels::Update()
 					}
 				}
 			
-				for (unsigned int n = 3; n < NUM_PIXELS_BOOM; ++n)
+				for (unsigned int n = 5; n < NUM_PIXELS_BOOM; ++n)
 				{
 					m_pStripFrontLeft->setPixelColor(n, 0, 0, 0);
 					m_pStripRearLeft->setPixelColor(n, 0, 0, 0);
