@@ -36,12 +36,12 @@ SerialDebugDisplay20x4 *pDisplay = NULL;
 #define PID_HERTZ 100*/
 
 #define PID_ROLL_NICK_P 0.25f //0.3f
-#define PID_ROLL_NICK_I 0.00001f
+#define PID_ROLL_NICK_I 0.0001f
 #define PID_ROLL_NICK_D 75.0f // 80.0f
 #define PID_YAW_P 0.8f
-#define PID_YAW_I 0.0000f
-#define PID_YAW_D 50.0f
-#define PID_HERTZ 100
+#define PID_YAW_I 0.0001f
+#define PID_YAW_D 10.0f
+#define PID_HERTZ 300
 
 #define NUM_CHANNELS 7
 #define RC_CHANNEL_ROLL 0

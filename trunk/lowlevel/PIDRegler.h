@@ -29,8 +29,11 @@ public:
 		{
 			assert(nTimeStepInMilliseconds > 0);
 
-			float fP = m_fP_Factor * fCurrentError;
-			float fD = m_fD_Factor * ((fCurrentError - m_fLastError) / nTimeStepInMilliseconds);
+			float fUsedPFactor = bUseIntegral ? m_fP_Factor * 0.75 : m_fP_Factor;
+			float fUsedDFactor = bUseIntegral ? m_fD_Factor * 0.5 : m_fD_Factor;
+
+			float fP = fUsedPFactor * fCurrentError;
+			float fD = fUsedDFactor * ((fCurrentError - m_fLastError) / nTimeStepInMilliseconds);
 			float fI = 0.0f;
 			
 			if (bUseIntegral)
@@ -45,7 +48,7 @@ public:
 			}
 
 			//Utilities::Math::Clamp(fP, -1.0f, 1.0f);
-			Utilities::Math::Clamp(fI, -1.0f, 1.0f);
+			//Utilities::Math::Clamp(fI, -1.0f, 1.0f);
 			//Utilities::Math::Clamp(fD, -1.0f, 1.0f);
                         
 			// calculate output
